@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Map, Maximize, Package, Compass } from 'lucide-react';
+import { Map, Maximize, Package, Compass, Mail, Phone, Building } from 'lucide-react';
 import type { Billboard } from '@/lib/types';
 import Link from 'next/link';
 import { Header } from '@/components/layout/header';
@@ -109,6 +109,42 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        {/* About Section */}
+        <section id="about" className="py-20 bg-secondary/50">
+          <div className="container mx-auto px-4">
+            <h2 className="font-headline text-3xl md:text-4xl font-bold text-center mb-12">
+              About Us
+            </h2>
+            <Card className="max-w-2xl mx-auto shadow-lg">
+                <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                        <h3 className="font-headline text-2xl font-bold text-primary">Jahedul Anowar</h3>
+                        <p className="flex items-start text-muted-foreground">
+                            <Building className="mr-3 h-5 w-5 text-primary flex-shrink-0 mt-1" />
+                            <span>
+                                <strong>Cox's Ad</strong><br />
+                                Siraj Nazir Road (In front of SP office)<br />
+                                Baharchara,Coxsbazar-4700
+                            </span>
+                        </p>
+                    </div>
+                    <div className="space-y-4">
+                        <h3 className="font-headline text-2xl font-bold text-primary invisible md:visible">Contact</h3>
+                         <p className="flex items-center text-muted-foreground">
+                            <Phone className="mr-3 h-5 w-5 text-primary flex-shrink-0" />
+                            <span>01711-280768, 01862 777899</span>
+                        </p>
+                        <p className="flex items-center text-muted-foreground">
+                            <Mail className="mr-3 h-5 w-5 text-primary flex-shrink-0" />
+                            <a href="mailto:coxadd05@yahoo.com" className="hover:text-primary transition-colors">coxadd05@yahoo.com</a>
+                        </p>
+                    </div>
+                </CardContent>
+            </Card>
+          </div>
+        </section>
+
       </main>
       <Footer />
     </>

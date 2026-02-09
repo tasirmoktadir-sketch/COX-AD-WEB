@@ -21,6 +21,7 @@ import { signOut } from 'firebase/auth';
 const baseNavLinks = [
   { href: "/", label: "Billboards" },
   { href: "/ai-suggester", label: "AI Suggester" },
+  { href: "/#about", label: "About" },
   { href: "/contact", label: "Contact" },
 ]
 
