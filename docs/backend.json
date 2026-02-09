@@ -1,0 +1,125 @@
+{
+  "entities": {
+    "AdminUser": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AdminUser",
+      "type": "object",
+      "description": "Represents an administrator user with access to the admin dashboard.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the AdminUser entity."
+        },
+        "username": {
+          "type": "string",
+          "description": "Admin's username for logging in."
+        },
+        "email": {
+          "type": "string",
+          "description": "Admin's email address.",
+          "format": "email"
+        }
+      },
+      "required": [
+        "id",
+        "username",
+        "email"
+      ]
+    },
+    "Billboard": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Billboard",
+      "type": "object",
+      "description": "Represents a billboard advertisement location.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Billboard entity."
+        },
+        "locationName": {
+          "type": "string",
+          "description": "Name of the location where the billboard is situated."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the image displayed on the billboard.",
+          "format": "uri"
+        },
+        "dimension": {
+          "type": "string",
+          "description": "Dimensions of the billboard (e.g., 10ft x 20ft)."
+        },
+        "estimatedReach": {
+          "type": "number",
+          "description": "Estimated number of people who view the billboard daily."
+        }
+      },
+      "required": [
+        "id",
+        "locationName",
+        "imageUrl",
+        "dimension",
+        "estimatedReach"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/billboards/{billboardId}",
+        "definition": {
+          "entityName": "Billboard",
+          "schema": {
+            "$ref": "#/backend/entities/Billboard"
+          },
+          "description": "Stores information about each billboard location. Includes details like location name, image URL, dimensions, and estimated reach.",
+          "params": [
+            {
+              "name": "billboardId",
+              "description": "Unique identifier for the billboard."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{adminId}",
+        "definition": {
+          "entityName": "AdminUser",
+          "schema": {
+            "$ref": "#/backend/entities/AdminUser"
+          },
+          "description": "Collection to store admin user roles. The existence of a document indicates admin privileges.",
+          "params": [
+            {
+              "name": "adminId",
+              "description": "The unique user ID of the administrator."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/admin_users/{adminUserId}",
+        "definition": {
+          "entityName": "AdminUser",
+          "schema": {
+            "$ref": "#/backend/entities/AdminUser"
+          },
+          "description": "Collection to store admin user information. Includes details like username and email.",
+          "params": [
+            {
+              "name": "adminUserId",
+              "description": "Unique identifier for the admin user."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to securely manage billboard data and admin users while ensuring authorization independence and supporting list operations. Admins are managed via a dedicated collection `roles_admin` for simplified role-based access control. Billboard data is stored in a flat collection `/billboards` for easy querying and display on the website. Since the app requires an admin user, a collection `/admin_users` is needed to manage them.\n\nAuthorization Independence: The structure achieves authorization independence by using the `/roles_admin/{uid}` collection for admin role management. This allows us to check admin status based on document existence instead of relying on `get()` calls to other collections, ensuring atomic operations.\n\nQAPs Support: Secure list operations are supported by segregating admin role data into a separate collection (`/roles_admin`). Security rules can efficiently check for the existence of a document in this collection to grant or deny access to sensitive data and functionalities. The billboards are placed in a flat collection with no subcollections. This collection enables simple querying and displaying."
+  }
+}

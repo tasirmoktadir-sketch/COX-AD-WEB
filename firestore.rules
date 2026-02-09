@@ -1,0 +1,100 @@
+/**
+ * This ruleset enforces a strict, role-based access control (RBAC) model centered around administrators.
+ * A user's admin status is the primary factor for granting write permissions across the database.
+ *
+ * Core Philosophy:
+ * The security model is designed to be highly performant and secure. Admin status is determined by the
+ * existence of a document in the `/roles_admin` collection, where the document ID matches the user's
+ * UID. This avoids slow and costly `get()` calls in other rules. Data is segregated into distinct
+ * top-level collections for public content and admin-only management.
+ *
+ * Data Structure:
+ * - /billboards/{billboardId}: A public collection containing billboard information, readable by anyone.
+ * - /roles_admin/{adminId}: A private collection where document existence signifies admin privileges.
+ * - /admin_users/{adminUserId}: A private collection storing profile data for administrators.
+ *
+ * Key Security Decisions:
+ * - Public vs. Private Data: Billboards are public-read, but all write operations are restricted to admins.
+ * - Admin Management: Only existing administrators can view, add, or remove other administrators. This prevents privilege escalation.
+ * - Default Deny: All access is denied by default and only explicitly granted through these rules.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    //-------------------------------------------------------------------------
+    // Helper Functions
+    //-------------------------------------------------------------------------
+
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the authenticated user has an admin role.
+     * This is determined by the existence of a document in the /roles_admin
+     * collection where the document ID is the user's UID.
+     */
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    //-------------------------------------------------------------------------
+    // Collection Rules
+    //-------------------------------------------------------------------------
+
+    /**
+     * @description Defines rules for the 'billboards' collection. This data is publicly
+     *              readable by all users (including anonymous visitors), but can only be
+     *              created, modified, or deleted by authenticated administrators.
+     * @path        /billboards/{billboardId}
+     * @allow       (get, list) by anyone, authenticated or not.
+     * @allow       (create, update, delete) by a user with an admin role.
+     * @deny        (create, update, delete) by any non-admin user.
+     * @principle   Public read with role-based writes. Separates public consumption from privileged modification.
+     */
+    match /billboards/{billboardId} {
+      allow get, list: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin() && resource != null;
+      allow delete: if isAdmin() && resource != null;
+    }
+
+    /**
+     * @description Defines rules for the 'roles_admin' collection. This collection is the
+     *              source of truth for admin privileges. The existence of a document
+     *              confers admin rights. Only other admins can manage this collection.
+     * @path        /roles_admin/{adminId}
+     * @allow       (get, list, create, update, delete) by a user who is already an admin.
+     * @deny        Any access by a non-admin user. This prevents self-promotion to admin status.
+     * @principle   Restricts sensitive access control data to privileged users only.
+     */
+    match /roles_admin/{adminId} {
+      allow get: if isAdmin();
+      allow list: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if isAdmin() && resource != null;
+      allow delete: if isAdmin() && resource != null;
+    }
+
+    /**
+     * @description Defines rules for the 'admin_users' collection, which stores profile
+     *              information for administrators. Only other admins can view or manage
+     *              these user profiles.
+     * @path        /admin_users/{adminUserId}
+     * @allow       (get, list, create, update, delete) by a user who is already an admin.
+     * @deny        Any access by non-admin users to protect admin information.
+     * @principle   Protects sensitive user data and enforces relational integrity on create/update.
+     */
+    match /admin_users/{adminUserId} {
+      allow get: if isAdmin();
+      allow list: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.id == adminUserId;
+      allow update: if isAdmin() && resource != null && request.resource.data.id == resource.data.id;
+      allow delete: if isAdmin() && resource != null;
+    }
+  }
+}
