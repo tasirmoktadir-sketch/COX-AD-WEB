@@ -1,21 +1,15 @@
 /**
  * This ruleset enforces a strict, role-based access control (RBAC) model centered around administrators.
- * A user's admin status is the primary factor for granting write permissions across the database.
  *
  * Core Philosophy:
- * The security model is designed to be highly performant and secure. Admin status is determined by the
- * existence of a document in the `/roles_admin` collection, where the document ID matches the user's
- * UID. This avoids slow and costly `get()` calls in other rules. Data is segregated into distinct
- * top-level collections for public content and admin-only management.
- *
- * Data Structure:
- * - /billboards/{billboardId}: A public collection containing billboard information, readable by anyone.
- * - /roles_admin/{adminId}: A private collection where document existence signifies admin privileges.
- * - /admin_users/{adminUserId}: A private collection storing profile data for administrators.
+ * Admin status is determined by the existence of a document in the `/roles_admin` collection,
+ * where the document ID matches the user's UID. This is a secure and performant approach.
  *
  * Key Security Decisions:
- * - Public vs. Private Data: Billboards are public-read, but all write operations are restricted to admins.
- * - Admin Management: Only existing administrators can view, add, or remove other administrators. This prevents privilege escalation.
+ * - Public vs. Private Data: Billboards are public-read, but writes are restricted to admins.
+ * - Admin Self-Verification: Any authenticated user can check for their OWN admin document. This is
+ *   required for the application to verify their status upon login.
+ * - Admin Management: Only existing administrators can view the full list of admins or manage other admins.
  * - Default Deny: All access is denied by default and only explicitly granted through these rules.
  */
 rules_version = '2';
@@ -35,8 +29,8 @@ service cloud.firestore {
 
     /**
      * Checks if the authenticated user has an admin role.
-     * This is determined by the existence of a document in the /roles_admin
-     * collection where the document ID is the user's UID.
+     * This relies on the `get` permission being granted on the user's own
+     * document in the `/roles_admin` collection.
      */
     function isAdmin() {
       return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
@@ -47,13 +41,8 @@ service cloud.firestore {
     //-------------------------------------------------------------------------
 
     /**
-     * @description Defines rules for the 'billboards' collection. This data is publicly
-     *              readable by all users (including anonymous visitors), but can only be
-     *              created, modified, or deleted by authenticated admins.
-     * @path        /billboards/{billboardId}
-     * @allow       (read) by anyone, authenticated or not.
-     * @allow       (write) by any admin user.
-     * @principle   Public read with admin-only writes.
+     * /billboards/{billboardId}
+     * Publicly readable, but only admins can create, update, or delete.
      */
     match /billboards/{billboardId} {
       allow read: if true;
@@ -61,18 +50,14 @@ service cloud.firestore {
     }
 
     /**
-     * @description Defines rules for the 'roles_admin' collection. This collection is the
-     *              source of truth for admin privileges. The existence of a document
-     *              confers admin rights. Only other admins can manage this collection.
-     * @path        /roles_admin/{adminId}
-     * @allow       (read) by any authenticated user for debugging purposes.
-     * @allow       (write) by a user who is already an admin.
-     * @principle   Restricts sensitive access control data to privileged users only.
+     * /roles_admin/{adminId}
+     * This collection is the source of truth for admin privileges.
+     * - `get`: Allows a user to read their own document to check their admin status. This is crucial for the app's auth flow.
+     * - `list`, `write`: Allows an existing admin to manage other admin roles (view list, add, remove).
      */
     match /roles_admin/{adminId} {
-      // TEMPORARY DEBUGGING RULE: Allow any signed-in user to read admin roles.
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow get: if isSignedIn() && request.auth.uid == adminId;
+      allow list, write: if isAdmin();
     }
 
     /**

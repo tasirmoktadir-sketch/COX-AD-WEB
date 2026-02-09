@@ -17,7 +17,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     return doc(firestore, 'roles_admin', user.uid);
   }, [firestore, user]);
 
-  const { data: isAdminDoc, isLoading: isAdminLoading } = useDoc(adminRoleRef);
+  const { data: isAdminDoc, isLoading: isAdminLoading, error: isAdminError } = useDoc(adminRoleRef);
   const isAdmin = !!isAdminDoc;
 
   useEffect(() => {
@@ -28,17 +28,37 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       if (!user) {
         // If not logged in after checks, redirect to login.
         router.replace('/login');
-      } else if (!isAdmin) {
+      } else if (isAdminError) {
+          toast({
+            variant: 'destructive',
+            title: 'Permission Error',
+            description: `A security rule is blocking access. Please check your Firestore rules for the /roles_admin collection. (Error: ${isAdminError.message})`,
+            duration: 10000,
+          });
+          router.replace('/');
+      }
+      else if (!isAdmin) {
         // If logged in but not an admin, show error and redirect home.
         toast({
           variant: 'destructive',
-          title: 'Access Denied',
-          description: `Your account (UID: ${user.uid}) lacks admin privileges. Please verify the document at /roles_admin/${user.uid} in Firestore.`,
+          title: 'Access Denied: Not an Admin',
+          description: (
+            <div>
+              <p>Your account is not configured as an administrator.</p>
+              <p className="mt-2">Please double-check the following in your Firestore database:</p>
+              <ul className="list-disc pl-5 mt-1 text-xs">
+                <li>A collection named exactly <strong>roles_admin</strong> exists.</li>
+                <li>Inside that collection, there is a document whose ID is exactly your User UID.</li>
+              </ul>
+              <p className="mt-2 text-xs font-mono bg-muted p-1 rounded">Your UID: {user.uid}</p>
+            </div>
+          ),
+          duration: 20000, // Make it stay longer
         });
         router.replace('/');
       }
     }
-  }, [user, isAdmin, isUserLoading, isAdminLoading, router]);
+  }, [user, isAdmin, isUserLoading, isAdminLoading, router, isAdminError]);
 
   // While we are checking user auth OR admin role, show a loader.
   if (isUserLoading || isAdminLoading) {
