@@ -52,15 +52,13 @@ service cloud.firestore {
      *              created, modified, or deleted by authenticated users.
      * @path        /billboards/{billboardId}
      * @allow       (get, list) by anyone, authenticated or not.
-     * @allow       (create, update, delete) by any signed-in user.
-     * @deny        (create, update, delete) by any non-authenticated user.
+     * @allow       (write) by any signed-in user.
+     * @deny        (write) by any non-authenticated user.
      * @principle   Public read with authenticated writes.
      */
     match /billboards/{billboardId} {
       allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && resource != null;
-      allow delete: if isSignedIn() && resource != null;
+      allow write: if isSignedIn();
     }
 
     /**
