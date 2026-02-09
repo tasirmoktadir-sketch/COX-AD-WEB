@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { useAuth, initiateEmailSignIn, useUser } from '@/firebase';
+import { useAuth, initiateEmailSignIn, useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -29,9 +30,25 @@ const formSchema = z.object({
 
 export default function LoginPage() {
   const auth = useAuth();
-  const { isUserLoading } = useUser();
+  const { user, isUserLoading } = useUser();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const firestore = useFirestore();
+
+  const adminRoleRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return doc(firestore, 'roles_admin', user.uid);
+  }, [firestore, user]);
+
+  const { data: isAdminDoc, isLoading: isAdminLoading } = useDoc(adminRoleRef);
+  const isAdmin = !!isAdminDoc;
+
+  useEffect(() => {
+    const isAuthCheckComplete = !isUserLoading && !isAdminLoading;
+    if (isAuthCheckComplete && user && isAdmin) {
+      router.replace('/admin');
+    }
+  }, [user, isAdmin, isUserLoading, isAdminLoading, router]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -40,9 +57,6 @@ export default function LoginPage() {
       password: '',
     },
   });
-
-  // Note: The problematic useEffect that caused a redirect loop has been removed.
-  // Redirection now happens explicitly after a successful login attempt.
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
@@ -75,9 +89,8 @@ export default function LoginPage() {
       });
   }
 
-  // The loading state should only depend on the initial auth check, not on whether a user is present.
-  // This prevents the page from getting stuck in a loading state for already-logged-in users.
-  if (isUserLoading) {
+  // Show loader while we check if user is already a logged-in admin, or if they are about to be redirected.
+  if (isUserLoading || isAdminLoading || (user && isAdmin)) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <Loader2 className="h-16 w-16 animate-spin" />

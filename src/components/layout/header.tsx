@@ -66,9 +66,12 @@ export function Header() {
                 <LogOut className="h-5 w-5" />
               </Button>
             ) : (
-              <Button asChild>
-                <Link href="/login">Login</Link>
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button asChild>
+                  <Link href="/login">Login</Link>
+                </Button>
+                <span className="text-xs text-muted-foreground">(Admins Only)</span>
+              </div>
             )
           )}
         </div>
@@ -92,9 +95,12 @@ export function Header() {
                         <LogOut className="mr-2 h-4 w-4" /> Logout
                       </Button>
                     ) : (
-                      <Button asChild className="w-full">
-                        <Link href="/login">Login</Link>
-                      </Button>
+                      <div className="flex flex-col items-center text-center gap-2">
+                        <Button asChild className="w-full">
+                          <Link href="/login">Login</Link>
+                        </Button>
+                         <p className="text-xs text-muted-foreground">(Admins Only)</p>
+                      </div>
                     )
                   )}
                 </div>
