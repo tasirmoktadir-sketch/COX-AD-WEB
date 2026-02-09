@@ -55,6 +55,10 @@
             "type": "string",
             "format": "uri"
           }
+        },
+        "isPaused": {
+          "type": "boolean",
+          "description": "Whether the billboard listing is paused and hidden from public view."
         }
       },
       "required": [

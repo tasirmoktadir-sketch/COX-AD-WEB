@@ -6,7 +6,7 @@ import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, useFieldArray } from "react-hook-form"
 import { doc, collection } from "firebase/firestore"
-import { PlusCircle, MoreHorizontal, X, UploadCloud } from "lucide-react"
+import { PlusCircle, MoreHorizontal, X, UploadCloud, PauseCircle, PlayCircle } from "lucide-react"
 
 import {
   Table,
@@ -29,7 +29,6 @@ import {
 } from "@/components/ui/sheet"
 import {
   AlertDialog,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -40,6 +39,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
@@ -52,9 +52,11 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { Switch } from "@/components/ui/switch"
+import { Badge } from "@/components/ui/badge"
 import type { Billboard } from "@/lib/types"
 import { useBillboards } from "@/context/billboard-context"
-import { useFirestore, setDocumentNonBlocking, addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase"
+import { useFirestore, setDocumentNonBlocking, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase"
 import { cn } from "@/lib/utils"
 
 const billboardFormSchema = z.object({
@@ -63,6 +65,7 @@ const billboardFormSchema = z.object({
     size: z.string().min(3, "Invalid size"),
     availability: z.coerce.number().int().min(0, "Availability cannot be negative."),
     images: z.array(z.string().url("Invalid URL format.")).min(1, "At least one image is required."),
+    isPaused: z.boolean().default(false),
   })
 
 type BillboardFormValues = z.infer<typeof billboardFormSchema>
@@ -76,7 +79,7 @@ export function BillboardsTable() {
 
   const form = useForm<BillboardFormValues>({
     resolver: zodResolver(billboardFormSchema),
-    defaultValues: { images: [], availability: 1 }
+    defaultValues: { images: [], availability: 1, isPaused: false }
   })
   
   const { fields, append, remove } = useFieldArray({
@@ -93,6 +96,7 @@ export function BillboardsTable() {
         size: billboard.size,
         availability: billboard.availability,
         images: billboard.images,
+        isPaused: billboard.isPaused ?? false,
       })
     } else {
       form.reset({
@@ -101,6 +105,7 @@ export function BillboardsTable() {
         size: "",
         availability: 1,
         images: [],
+        isPaused: false,
       })
     }
     setIsSheetOpen(true)
@@ -120,7 +125,6 @@ export function BillboardsTable() {
           reader.readAsDataURL(file);
         }
     }
-    // Reset file input to allow re-uploading the same file
     event.target.value = '';
   };
   
@@ -133,6 +137,11 @@ export function BillboardsTable() {
       addDocumentNonBlocking(billboardsCollection, values);
     }
     setIsSheetOpen(false)
+  }
+
+  const handleTogglePause = (billboard: Billboard) => {
+    const billboardRef = doc(firestore, 'billboards', billboard.id);
+    updateDocumentNonBlocking(billboardRef, { isPaused: !billboard.isPaused });
   }
   
   const handleDeleteConfirmed = () => {
@@ -167,8 +176,11 @@ export function BillboardsTable() {
                 </TableHeader>
                 <TableBody>
                 {billboards && billboards.map((billboard) => (
-                    <TableRow key={billboard.id}>
-                    <TableCell className="font-medium">{billboard.name}</TableCell>
+                    <TableRow key={billboard.id} className={cn(billboard.isPaused && "bg-muted/50 text-muted-foreground")}>
+                    <TableCell className="font-medium">
+                        {billboard.name}
+                        {billboard.isPaused && <Badge variant="outline" className="ml-2">Paused</Badge>}
+                    </TableCell>
                     <TableCell className="hidden md:table-cell">{billboard.location}</TableCell>
                     <TableCell className="hidden sm:table-cell">{billboard.availability}</TableCell>
                     <TableCell className="text-right">
@@ -180,9 +192,17 @@ export function BillboardsTable() {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleTogglePause(billboard)}>
+                                    {billboard.isPaused ? (
+                                        <><PlayCircle className="mr-2 h-4 w-4" /> Resume</>
+                                    ) : (
+                                        <><PauseCircle className="mr-2 h-4 w-4" /> Pause</>
+                                    )}
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleOpenSheet(billboard)}>
                                     Edit
                                 </DropdownMenuItem>
+                                <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => setDeletingBillboard(billboard)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
                                     Delete
                                 </DropdownMenuItem>
@@ -211,36 +231,56 @@ export function BillboardsTable() {
                 </SheetDescription>
                 </SheetHeader>
                 <div className="flex-grow py-6 pr-6 space-y-4 overflow-y-auto">
-                <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Name</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
-                <FormField control={form.control} name="location" render={({ field }) => ( <FormItem> <FormLabel>Location</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
-                <FormField control={form.control} name="size" render={({ field }) => ( <FormItem> <FormLabel>Size</FormLabel> <FormControl><Input placeholder="e.g., 14' x 48'" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
-                <FormField control={form.control} name="availability" render={({ field }) => ( <FormItem> <FormLabel>Availability (pcs)</FormLabel> <FormControl><Input type="number" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
-                
-                <FormItem>
-                    <FormLabel>Images</FormLabel>
-                    <FormControl>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                            {fields.map((field, index) => (
-                                <div key={field.id} className="relative aspect-video rounded-md overflow-hidden group bg-muted">
-                                    {field.value && <Image src={field.value} alt={`Billboard Image ${index + 1}`} fill className="object-cover"/>}
-                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                        <Button variant="destructive" size="icon" type="button" onClick={() => remove(index)}>
-                                            <X className="h-4 w-4" />
-                                            <span className="sr-only">Remove Image</span>
-                                        </Button>
+                    <FormField
+                      control={form.control}
+                      name="isPaused"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-muted/50">
+                          <div className="space-y-0.5">
+                            <FormLabel>Pause Listing</FormLabel>
+                            <FormDescription>
+                              A paused listing will be hidden from the public website.
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Name</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                    <FormField control={form.control} name="location" render={({ field }) => ( <FormItem> <FormLabel>Location</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                    <FormField control={form.control} name="size" render={({ field }) => ( <FormItem> <FormLabel>Size</FormLabel> <FormControl><Input placeholder="e.g., 14' x 48'" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                    <FormField control={form.control} name="availability" render={({ field }) => ( <FormItem> <FormLabel>Availability (pcs)</FormLabel> <FormControl><Input type="number" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                    
+                    <FormItem>
+                        <FormLabel>Images</FormLabel>
+                        <FormControl>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                {fields.map((field, index) => (
+                                    <div key={field.id} className="relative aspect-video rounded-md overflow-hidden group bg-muted">
+                                        {field.value && <Image src={field.value} alt={`Billboard Image ${index + 1}`} fill className="object-cover"/>}
+                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <Button variant="destructive" size="icon" type="button" onClick={() => remove(index)}>
+                                                <X className="h-4 w-4" />
+                                                <span className="sr-only">Remove Image</span>
+                                            </Button>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                            <label className="relative aspect-video rounded-md border-2 border-dashed border-muted-foreground/50 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-accent/10 transition-colors">
-                                <UploadCloud className="w-8 h-8 text-muted-foreground/80" />
-                                <span className="mt-2 text-sm text-muted-foreground/80">Upload Images</span>
-                                <Input type="file" accept="image/*" onChange={handleFileChange} className="sr-only" multiple />
-                            </label>
-                        </div>
-                    </FormControl>
-                    <FormDescription>Upload one or more images for the billboard. The first image will be the primary one.</FormDescription>
-                    <FormMessage />
-                </FormItem>
+                                ))}
+                                <label className="relative aspect-video rounded-md border-2 border-dashed border-muted-foreground/50 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-accent/10 transition-colors">
+                                    <UploadCloud className="w-8 h-8 text-muted-foreground/80" />
+                                    <span className="mt-2 text-sm text-muted-foreground/80">Upload Images</span>
+                                    <Input type="file" accept="image/*" onChange={handleFileChange} className="sr-only" multiple />
+                                </label>
+                            </div>
+                        </FormControl>
+                        <FormDescription>Upload one or more images for the billboard. The first image will be the primary one.</FormDescription>
+                        <FormMessage />
+                    </FormItem>
 
                 </div>
                 <SheetFooter className="pt-6">
@@ -266,13 +306,13 @@ export function BillboardsTable() {
             </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <Button
-                className={cn(buttonVariants({ variant: "destructive" }))}
-                onClick={handleDeleteConfirmed}
-            >
-                Delete
-            </Button>
+                <Button variant="ghost" onClick={() => setDeletingBillboard(null)}>Cancel</Button>
+                <Button
+                    className={cn(buttonVariants({ variant: "destructive" }))}
+                    onClick={handleDeleteConfirmed}
+                >
+                    Delete
+                </Button>
             </AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>

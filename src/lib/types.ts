@@ -5,4 +5,5 @@ export type Billboard = {
   size: string;
   availability: number;
   images: string[];
+  isPaused?: boolean;
 };

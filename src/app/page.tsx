@@ -58,6 +58,7 @@ function BillboardCard({ billboard }: { billboard: Billboard }) {
 
 export default function Home() {
   const { billboards } = useBillboards();
+  const activeBillboards = billboards.filter(b => !b.isPaused);
 
   return (
     <>
@@ -91,7 +92,7 @@ export default function Home() {
               Our Prime Locations
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {billboards.map((billboard) => (
+              {activeBillboards.map((billboard) => (
                 <BillboardCard key={billboard.id} billboard={billboard} />
               ))}
             </div>
