@@ -56,14 +56,13 @@
           "type": "number",
           "description": "Estimated number of people who view the billboard weekly."
         },
-        "imageId": {
-          "type": "string",
-          "description": "ID for the placeholder image."
-        },
-        "imageUrl": {
-          "type": "string",
-          "description": "URL for a custom uploaded image.",
-          "format": "uri"
+        "images": {
+          "type": "array",
+          "description": "URLs for the billboard images.",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
         }
       },
       "required": [
@@ -73,7 +72,7 @@
         "lng",
         "dimensions",
         "weeklyImpressions",
-        "imageId"
+        "images"
       ]
     },
     "ContactInquiry": {

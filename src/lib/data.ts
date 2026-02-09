@@ -9,7 +9,7 @@ const billboards: Billboard[] = [
     lng: -71.0603,
     dimensions: "20' x 60'",
     weeklyImpressions: 550000,
-    imageId: 'billboard-1',
+    images: ['https://images.unsplash.com/photo-1506606401543-2e73709cebb4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxjaXR5JTIwbmlnaHR8ZW58MHx8fHwxNzcwNTk5NTU3fDA&ixlib=rb-4.1.0&q=80&w=1080'],
   },
   {
     id: 'b2',
@@ -19,7 +19,7 @@ const billboards: Billboard[] = [
     lng: -71.062,
     dimensions: "14' x 48'",
     weeklyImpressions: 720000,
-    imageId: 'billboard-2',
+    images: ['https://images.unsplash.com/photo-1660925732757-1054762d916a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxoaWdod2F5JTIwdHJhZmZpY3xlbnwwfHx8fDE3NzA2MTk1ODN8MA&ixlib=rb-4.1.0&q=80&w=1080'],
   },
   {
     id: 'b3',
@@ -29,7 +29,7 @@ const billboards: Billboard[] = [
     lng: -71.0402,
     dimensions: "30' x 90'",
     weeklyImpressions: 480000,
-    imageId: 'billboard-3',
+    images: ['https://images.unsplash.com/photo-1696375300630-6c9616ede777?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxzaG9wcGluZyUyMGRpc3RyaWN0fGVufDB8fHx8MTc3MDYxOTU4M3ww&ixlib=rb-4.1.0&q=80&w=1080'],
   },
   {
     id: 'b4',
@@ -39,7 +39,7 @@ const billboards: Billboard[] = [
     lng: -71.1223,
     dimensions: "12' x 24'",
     weeklyImpressions: 210000,
-    imageId: 'billboard-4',
+    images: ['https://images.unsplash.com/photo-1711730423032-8e832733fef6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxzdWJ1cmJhbiUyMHJvYWR8ZW58MHx8fHwxNzcwNjE5NTgzfDA&ixlib=rb-4.1.0&q=80&w=1080'],
   },
   {
     id: 'b5',
@@ -49,7 +49,7 @@ const billboards: Billboard[] = [
     lng: -71.0568,
     dimensions: "50' x 50'",
     weeklyImpressions: 600000,
-    imageId: 'billboard-5',
+    images: ['https://images.unsplash.com/photo-1768230621592-4a8750c1adaf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxidWlsZGluZyUyMGNpdHlzY2FwZXxlbnwwfHx8fDE3NzA2MTk1ODN8MA&ixlib=rb-4.1.0&q=80&w=1080'],
   },
   {
     id: 'b6',
@@ -59,7 +59,7 @@ const billboards: Billboard[] = [
     lng: -71.0972,
     dimensions: "14' x 48'",
     weeklyImpressions: 850000,
-    imageId: 'billboard-6',
+    images: ['https://images.unsplash.com/photo-1567883251222-651d554b880c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx0b3VyaXN0JTIwYXR0cmFjdGlvbnxlbnwwfHx8fDE3NzA1NzM4NzV8MA&ixlib=rb-4.1.0&q=80&w=1080'],
   },
 ];
 

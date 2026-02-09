@@ -4,8 +4,10 @@ import * as React from "react"
 import Image from "next/image"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { doc } from "firebase/firestore"
+import { useForm, useFieldArray } from "react-hook-form"
+import { doc, collection } from "firebase/firestore"
+import { PlusCircle, MoreHorizontal, X, UploadCloud } from "lucide-react"
+
 import {
   Table,
   TableBody,
@@ -26,117 +28,141 @@ import {
   SheetClose,
 } from "@/components/ui/sheet"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { toast } from "@/hooks/use-toast"
 import type { Billboard } from "@/lib/types"
-import placeholderImages from "@/lib/placeholder-images.json"
 import { useBillboards } from "@/context/billboard-context"
-import { useFirestore, setDocumentNonBlocking } from "@/firebase"
+import { useFirestore, setDocumentNonBlocking, addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase"
 
-const editFormSchema = z.object({
-  name: z.string().min(2, "Name is too short"),
-  location: z.string().min(5, "Location is too short"),
-  dimensions: z.string().min(3, "Invalid dimensions"),
-  weeklyImpressions: z.coerce.number().int().positive("Must be a positive number"),
-  imageId: z.string().optional(),
-})
-
-type EditFormValues = z.infer<typeof editFormSchema>
-
-export function BillboardsTable() {
-  const { billboards } = useBillboards() // now from Firestore via context
-  const firestore = useFirestore()
-  const [editingBillboard, setEditingBillboard] = React.useState<Billboard | null>(null)
-  const [imagePreview, setImagePreview] = React.useState<string | null>(null)
-
-  const form = useForm<EditFormValues>({
-    resolver: zodResolver(editFormSchema),
+const billboardFormSchema = z.object({
+    name: z.string().min(2, "Name is too short"),
+    location: z.string().min(5, "Location is too short"),
+    lat: z.coerce.number().min(-90).max(90),
+    lng: z.coerce.number().min(-180).max(180),
+    dimensions: z.string().min(3, "Invalid dimensions"),
+    weeklyImpressions: z.coerce.number().int().positive("Must be a positive number"),
+    images: z.array(z.string().url("Invalid URL format.")).min(1, "At least one image is required."),
   })
 
-  const selectedImageId = form.watch("imageId")
+type BillboardFormValues = z.infer<typeof billboardFormSchema>
 
-  React.useEffect(() => {
-    if (selectedImageId) {
-      const selectedImage = placeholderImages.placeholderImages.find(img => img.id === selectedImageId)
-      if (selectedImage) {
-        setImagePreview(selectedImage.imageUrl)
-      }
-    }
-  }, [selectedImageId])
+export function BillboardsTable() {
+  const { billboards } = useBillboards()
+  const firestore = useFirestore()
+  const [isSheetOpen, setIsSheetOpen] = React.useState(false)
+  const [editingBillboard, setEditingBillboard] = React.useState<Billboard | null>(null)
+  const [deletingBillboard, setDeletingBillboard] = React.useState<Billboard | null>(null)
 
-  const handleEditClick = (billboard: Billboard) => {
+  const form = useForm<BillboardFormValues>({
+    resolver: zodResolver(billboardFormSchema),
+    defaultValues: { images: [] }
+  })
+  
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "images"
+  });
+
+  const handleOpenSheet = (billboard: Billboard | null) => {
     setEditingBillboard(billboard)
-    form.reset({
-      name: billboard.name,
-      location: billboard.location,
-      dimensions: billboard.dimensions,
-      weeklyImpressions: billboard.weeklyImpressions,
-      imageId: billboard.imageId,
-    })
-    const image = placeholderImages.placeholderImages.find(img => img.id === billboard.imageId);
-    setImagePreview(billboard.imageUrl || image?.imageUrl || null)
+    if (billboard) {
+      form.reset({
+        name: billboard.name,
+        location: billboard.location,
+        lat: billboard.lat,
+        lng: billboard.lng,
+        dimensions: billboard.dimensions,
+        weeklyImpressions: billboard.weeklyImpressions,
+        images: billboard.images,
+      })
+    } else {
+      form.reset({
+        name: "",
+        location: "",
+        lat: 0,
+        lng: 0,
+        dimensions: "",
+        weeklyImpressions: 0,
+        images: [],
+      })
+    }
+    setIsSheetOpen(true)
   }
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      form.setValue("imageId", "", { shouldValidate: true });
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    const files = event.target.files;
+    if (!files) return;
+
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file) {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            append(reader.result as string);
+          };
+          reader.readAsDataURL(file);
+        }
     }
+    // Reset file input to allow re-uploading the same file
+    event.target.value = '';
   };
-
-  const onSubmit = (values: EditFormValues) => {
-    if (!editingBillboard) return;
-
-    const billboardRef = doc(firestore, 'billboards', editingBillboard.id);
-    
-    const dataToUpdate: Partial<Billboard> = {
-      ...values,
-      imageId: values.imageId || "",
-      imageUrl: imagePreview || editingBillboard.imageUrl,
+  
+  const onSubmit = (values: BillboardFormValues) => {
+    if (editingBillboard) {
+      const billboardRef = doc(firestore, 'billboards', editingBillboard.id);
+      setDocumentNonBlocking(billboardRef, values, { merge: true });
+      toast({ title: "Billboard Updated", description: `Successfully updated "${values.name}".` })
+    } else {
+      const billboardsCollection = collection(firestore, 'billboards');
+      addDocumentNonBlocking(billboardsCollection, values);
+      toast({ title: "Billboard Created", description: `Successfully created "${values.name}".` })
     }
-    
-    setDocumentNonBlocking(billboardRef, dataToUpdate, { merge: true });
-
-    toast({
-      title: "Billboard Updated",
-      description: `Successfully updated "${values.name}". The changes are saved to the database.`,
-    })
-    
-    setEditingBillboard(null)
-    setImagePreview(null);
+    setIsSheetOpen(false)
   }
-
-  const onSheetOpenChange = (open: boolean) => {
-    if (!open) {
-      setEditingBillboard(null);
-      setImagePreview(null);
-    }
+  
+  const handleDelete = () => {
+    if (!deletingBillboard) return;
+    const billboardRef = doc(firestore, 'billboards', deletingBillboard.id);
+    deleteDocumentNonBlocking(billboardRef);
+    toast({ variant: "destructive", title: "Billboard Deleted", description: `"${deletingBillboard.name}" has been deleted.` });
+    setDeletingBillboard(null);
   }
 
   return (
+    <>
     <Card>
-      <CardHeader>
-        <CardTitle>Billboard Listings</CardTitle>
-        <CardDescription>View and manage all available billboard locations.</CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+            <CardTitle>Billboard Listings</CardTitle>
+            <CardDescription>View, create, edit, and delete billboard locations.</CardDescription>
+        </div>
+        <Button onClick={() => handleOpenSheet(null)} className="transition-transform duration-300 hover:scale-105">
+          <PlusCircle className="mr-2 h-4 w-4" /> Create Billboard
+        </Button>
       </CardHeader>
       <CardContent>
         <div className="border rounded-md">
@@ -156,141 +182,111 @@ export function BillboardsTable() {
                     <TableCell className="hidden md:table-cell">{billboard.location}</TableCell>
                     <TableCell className="hidden sm:table-cell">{billboard.weeklyImpressions.toLocaleString()}</TableCell>
                     <TableCell className="text-right">
-                        <Button variant="outline" size="sm" onClick={() => handleEditClick(billboard)} className="transition-transform duration-300 hover:scale-105">
-                        Edit
-                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="sr-only">Actions</span>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleOpenSheet(billboard)}>
+                                    Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setDeletingBillboard(billboard)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                    Delete
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </TableCell>
                     </TableRow>
                 ))}
                 </TableBody>
             </Table>
         </div>
-
-        <Sheet open={!!editingBillboard} onOpenChange={onSheetOpenChange}>
-          <SheetContent className="sm:max-w-lg">
-            {editingBillboard && (
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
-                  <SheetHeader>
-                    <SheetTitle>Edit Billboard</SheetTitle>
-                    <SheetDescription>
-                      Make changes to the "{editingBillboard.name}" listing.
-                    </SheetDescription>
-                  </SheetHeader>
-                  <div className="flex-grow py-6 pr-6 space-y-4 overflow-y-auto">
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Name</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="location"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Location</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                     <FormField
-                      control={form.control}
-                      name="dimensions"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Dimensions</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g., 14' x 48'" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="weeklyImpressions"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Weekly Impressions</FormLabel>
-                          <FormControl>
-                            <Input type="number" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="imageId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Billboard Image</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value || ""}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a stock image" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {placeholderImages.placeholderImages.map((image) => (
-                                <SelectItem key={image.id} value={image.id}>
-                                  {image.description}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <div className="relative flex items-center justify-center my-4">
-                        <div className="flex-grow border-t border-muted"></div>
-                        <span className="flex-shrink mx-4 text-xs text-muted-foreground uppercase">Or</span>
-                        <div className="flex-grow border-t border-muted"></div>
-                    </div>
-
-                    <FormItem>
-                        <FormLabel>Upload Custom Image</FormLabel>
-                        <FormControl>
-                            <Input type="file" accept="image/*" onChange={handleFileChange} className="file:text-primary file:font-medium" />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    
-                    {imagePreview && (
-                        <div className="rounded-md overflow-hidden border aspect-video relative bg-muted mt-4">
-                            <Image 
-                                src={imagePreview}
-                                alt={editingBillboard.name}
-                                fill
-                                className="object-cover"
-                            />
-                        </div>
-                    )}
-                  </div>
-                  <SheetFooter className="pt-6">
-                    <SheetClose asChild>
-                      <Button type="button" variant="ghost">Cancel</Button>
-                    </SheetClose>
-                    <Button type="submit" className="transition-transform duration-300 hover:scale-105">Save Changes</Button>
-                  </SheetFooter>
-                </form>
-              </Form>
-            )}
-          </SheetContent>
-        </Sheet>
       </CardContent>
     </Card>
+
+    <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetContent className="sm:max-w-2xl">
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+                <SheetHeader>
+                <SheetTitle>{editingBillboard ? 'Edit Billboard' : 'Create New Billboard'}</SheetTitle>
+                <SheetDescription>
+                    {editingBillboard 
+                    ? `Make changes to the "${editingBillboard.name}" listing.`
+                    : 'Fill out the form to add a new billboard to the catalog.'
+                    }
+                </SheetDescription>
+                </SheetHeader>
+                <div className="flex-grow py-6 pr-6 space-y-4 overflow-y-auto">
+                <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Name</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                <FormField control={form.control} name="location" render={({ field }) => ( <FormItem> <FormLabel>Location</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField control={form.control} name="lat" render={({ field }) => ( <FormItem> <FormLabel>Latitude</FormLabel> <FormControl><Input type="number" step="any" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                    <FormField control={form.control} name="lng" render={({ field }) => ( <FormItem> <FormLabel>Longitude</FormLabel> <FormControl><Input type="number" step="any" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                </div>
+                <FormField control={form.control} name="dimensions" render={({ field }) => ( <FormItem> <FormLabel>Dimensions</FormLabel> <FormControl><Input placeholder="e.g., 14' x 48'" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                <FormField control={form.control} name="weeklyImpressions" render={({ field }) => ( <FormItem> <FormLabel>Weekly Impressions</FormLabel> <FormControl><Input type="number" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                
+                <FormItem>
+                    <FormLabel>Images</FormLabel>
+                    <FormControl>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                            {fields.map((field, index) => (
+                                <div key={field.id} className="relative aspect-video rounded-md overflow-hidden group bg-muted">
+                                    <Image src={field.value} alt={`Billboard Image ${index + 1}`} fill className="object-cover"/>
+                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <Button variant="destructive" size="icon" type="button" onClick={() => remove(index)}>
+                                            <X className="h-4 w-4" />
+                                            <span className="sr-only">Remove Image</span>
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                            <label className="relative aspect-video rounded-md border-2 border-dashed border-muted-foreground/50 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-accent/10 transition-colors">
+                                <UploadCloud className="w-8 h-8 text-muted-foreground/80" />
+                                <span className="mt-2 text-sm text-muted-foreground/80">Upload Images</span>
+                                <Input type="file" accept="image/*" onChange={handleFileChange} className="sr-only" multiple />
+                            </label>
+                        </div>
+                    </FormControl>
+                    <FormDescription>Upload one or more images for the billboard. The first image will be the primary one.</FormDescription>
+                    <FormMessage />
+                </FormItem>
+
+                </div>
+                <SheetFooter className="pt-6">
+                <SheetClose asChild>
+                    <Button type="button" variant="ghost">Cancel</Button>
+                </SheetClose>
+                <Button type="submit" disabled={form.formState.isSubmitting} className="transition-transform duration-300 hover:scale-105">
+                    {editingBillboard ? 'Save Changes' : 'Create Billboard'}
+                </Button>
+                </SheetFooter>
+            </form>
+        </Form>
+        </SheetContent>
+    </Sheet>
+
+    <AlertDialog open={!!deletingBillboard} onOpenChange={(open) => !open && setDeletingBillboard(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the billboard
+                <span className="font-semibold"> "{deletingBillboard?.name}"</span>.
+            </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                Delete
+            </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   )
 }

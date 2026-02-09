@@ -13,9 +13,10 @@ import placeholderImages from '@/lib/placeholder-images.json';
 import { useBillboards } from '@/context/billboard-context';
 
 function BillboardCard({ billboard }: { billboard: Billboard }) {
-  const placeholderImage = placeholderImages.placeholderImages.find(img => img.id === billboard.imageId);
-  const imageUrl = billboard.imageUrl || placeholderImage?.imageUrl;
+  const imageUrl = billboard.images && billboard.images[0];
+  const placeholderImage = placeholderImages.placeholderImages.find(img => img.imageUrl === imageUrl);
   const imageDescription = placeholderImage?.description || billboard.name;
+  const imageHint = placeholderImage?.imageHint || '';
 
   return (
     <Card className="flex flex-col overflow-hidden transition-transform duration-300 ease-in-out hover:-translate-y-2 hover:shadow-2xl">
@@ -27,7 +28,7 @@ function BillboardCard({ billboard }: { billboard: Billboard }) {
               alt={imageDescription}
               fill
               className="object-cover"
-              data-ai-hint={placeholderImage?.imageHint || ''}
+              data-ai-hint={imageHint}
             />
           </div>
         )}
