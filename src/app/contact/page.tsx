@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { collection, serverTimestamp } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +21,7 @@ import { toast } from "@/hooks/use-toast";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useFirestore, addDocumentNonBlocking } from "@/firebase";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -28,6 +30,7 @@ const formSchema = z.object({
   email: z.string().email({
     message: "Please enter a valid email address.",
   }),
+  contactNumber: z.string().optional(),
   company: z.string().optional(),
   message: z.string().min(10, {
     message: "Message must be at least 10 characters.",
@@ -35,49 +38,42 @@ const formSchema = z.object({
 });
 
 export default function ContactPage() {
+  const firestore = useFirestore();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       email: "",
+      contactNumber: "",
       company: "",
       message: "",
     },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    try {
-      const response = await fetch("https://formspree.io/f/xaqdnodv", {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(values)
-      });
-      
-      if (response.ok) {
+  function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!firestore) {
         toast({
-          title: "Inquiry Sent!",
-          description: "Thank you for your message. We'll be in touch shortly.",
+            variant: "destructive",
+            title: "Error",
+            description: "Database service is not available. Please try again later.",
         });
-        form.reset();
-      } else {
-        const data = await response.json();
-        const errorMessage = data.errors ? data.errors.map((e:any) => e.message).join(", ") : "An unexpected error occurred.";
-        toast({
-          variant: "destructive",
-          title: "Submission Failed",
-          description: errorMessage,
-        });
-      }
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Network Error",
-        description: "Could not send message. Please check your connection and try again.",
-      });
+        return;
     }
+    
+    const inquiriesCollection = collection(firestore, 'inquiries');
+    addDocumentNonBlocking(inquiriesCollection, {
+        ...values,
+        company: values.company || '',
+        contactNumber: values.contactNumber || '',
+        read: false,
+        submittedAt: serverTimestamp(),
+    });
+
+    toast({
+      title: "Inquiry Sent!",
+      description: "Thank you for your message. We'll be in touch shortly.",
+    });
+    form.reset();
   }
 
   return (
@@ -116,6 +112,19 @@ export default function ContactPage() {
                         <FormLabel>Email Address</FormLabel>
                         <FormControl>
                           <Input placeholder="you@company.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                   <FormField
+                    control={form.control}
+                    name="contactNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Contact Number (Optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="+1 (555) 123-4567" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

@@ -79,11 +79,13 @@ service cloud.firestore {
      * Publicly writable for new inquiries, but only admins can read, update, or delete.
      */
     match /inquiries/{inquiryId} {
-      allow create: if request.resource.data.name is string 
+      allow create: if request.resource.data.name is string
                     && request.resource.data.email is string
                     && request.resource.data.message is string
+                    && (!('company' in request.resource.data) || request.resource.data.company is string)
+                    && (!('contactNumber' in request.resource.data) || request.resource.data.contactNumber is string)
                     && request.resource.data.read == false
-                    && request.time == request.resource.data.submittedAt;
+                    && request.resource.data.submittedAt == request.time;
       allow list, get, update, delete: if isAdmin();
     }
   }

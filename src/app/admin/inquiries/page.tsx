@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
-import { Loader2, Inbox } from 'lucide-react';
+import { Loader2, Inbox, Phone } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -16,6 +16,7 @@ type InquiryData = {
   name: string;
   email: string;
   company?: string;
+  contactNumber?: string;
   message: string;
   submittedAt: {
     seconds: number;
@@ -99,6 +100,12 @@ export default function InquiriesPage() {
                               <div>
                                 <div className="font-semibold">{inquiry.name}</div>
                                 <div className="text-sm text-muted-foreground">{inquiry.email}</div>
+                                {inquiry.contactNumber && (
+                                    <div className="flex items-center text-sm text-muted-foreground mt-1">
+                                        <Phone className="mr-2 h-3 w-3" />
+                                        {inquiry.contactNumber}
+                                    </div>
+                                )}
                                 {inquiry.company && <Badge variant="secondary" className="mt-2">{inquiry.company}</Badge>}
                               </div>
                             </div>
