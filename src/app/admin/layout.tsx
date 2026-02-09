@@ -33,7 +33,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         toast({
           variant: 'destructive',
           title: 'Access Denied',
-          description: 'You do not have permission to access the admin dashboard.',
+          description: `Your account (UID: ${user.uid}) lacks admin privileges. Please verify the document at /roles_admin/${user.uid} in Firestore.`,
         });
         router.replace('/');
       }
@@ -50,7 +50,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   }
 
   // After loading, if the user is a confirmed admin, show the dashboard.
-  if (isAdmin) {
+  if (user && isAdmin) {
     return <>{children}</>;
   }
 
