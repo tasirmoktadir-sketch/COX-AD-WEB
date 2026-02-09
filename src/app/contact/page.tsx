@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { collection, serverTimestamp } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +21,7 @@ import { toast } from "@/hooks/use-toast";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useFirestore, addDocumentNonBlocking } from "@/firebase";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -35,6 +37,7 @@ const formSchema = z.object({
 });
 
 export default function ContactPage() {
+  const firestore = useFirestore();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -46,7 +49,13 @@ export default function ContactPage() {
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log("Form submitted:", values);
+    const inquiriesCollection = collection(firestore, 'inquiries');
+    
+    addDocumentNonBlocking(inquiriesCollection, {
+      ...values,
+      submittedAt: serverTimestamp()
+    });
+
     toast({
       title: "Inquiry Sent!",
       description: "Thank you for your message. We'll be in touch shortly.",
@@ -59,7 +68,7 @@ export default function ContactPage() {
       <Header />
       <main className="flex-grow container mx-auto px-4 py-12 md:py-20">
         <div className="max-w-2xl mx-auto">
-          <Card className="shadow-xl">
+          <Card className="shadow-xl bg-card/80 backdrop-blur-lg">
             <CardHeader className="text-center">
               <CardTitle className="font-headline text-3xl">Get in Touch</CardTitle>
               <CardDescription className="text-lg">

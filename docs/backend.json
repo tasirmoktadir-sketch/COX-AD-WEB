@@ -75,6 +75,42 @@
         "weeklyImpressions",
         "imageId"
       ]
+    },
+    "ContactInquiry": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Contact Inquiry",
+      "type": "object",
+      "description": "Represents a message submitted through the contact form.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Sender's name."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Sender's email."
+        },
+        "company": {
+          "type": "string",
+          "description": "Sender's company (optional)."
+        },
+        "message": {
+          "type": "string",
+          "description": "The content of the message."
+        },
+        "submittedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the message was submitted."
+        }
+      },
+      "required": [
+        "name",
+        "email",
+        "message",
+        "submittedAt"
+      ]
     }
   },
   "auth": {
@@ -132,8 +168,24 @@
             }
           ]
         }
+      },
+      {
+        "path": "/inquiries/{inquiryId}",
+        "definition": {
+          "entityName": "ContactInquiry",
+          "schema": {
+            "$ref": "#/backend/entities/ContactInquiry"
+          },
+          "description": "Stores messages submitted through the website's contact form.",
+          "params": [
+            {
+              "name": "inquiryId",
+              "description": "Unique identifier for the inquiry."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "The Firestore structure is designed to securely manage billboard data and admin users while ensuring authorization independence and supporting list operations. Admins are managed via a dedicated collection `roles_admin` for simplified role-based access control. Billboard data is stored in a flat collection `/billboards` for easy querying and display on the website. Since the app requires an admin user, a collection `/admin_users` is needed to manage them.\n\nAuthorization Independence: The structure achieves authorization independence by using the `/roles_admin/{uid}` collection for admin role management. This allows us to check admin status based on document existence instead of relying on `get()` calls to other collections, ensuring atomic operations.\n\nQAPs Support: Secure list operations are supported by segregating admin role data into a separate collection (`/roles_admin`). Security rules can efficiently check for the existence of a document in this collection to grant or deny access to sensitive data and functionalities. The billboards are placed in a flat collection with no subcollections. This collection enables simple querying and displaying."
+    "reasoning": "The Firestore structure is designed to securely manage billboard data and admin users while ensuring authorization independence and supporting list operations. Admins are managed via a dedicated collection `roles_admin` for simplified role-based access control. Billboard data is stored in a flat collection `/billboards` for easy querying and display on the website. Since the app requires an admin user, a collection `/admin_users` is needed to manage them. To store contact form submissions, a new `/inquiries` collection is added. It is publicly writable but only readable by admins.\n\nAuthorization Independence: The structure achieves authorization independence by using the `/roles_admin/{uid}` collection for admin role management. This allows us to check admin status based on document existence instead of relying on `get()` calls to other collections, ensuring atomic operations.\n\nQAPs Support: Secure list operations are supported by segregating admin role data into a separate collection (`/roles_admin`). Security rules can efficiently check for the existence of a document in this collection to grant or deny access to sensitive data and functionalities. The billboards are placed in a flat collection with no subcollections. This collection enables simple querying and displaying."
   }
 }

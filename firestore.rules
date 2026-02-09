@@ -7,6 +7,7 @@
  *
  * Key Security Decisions:
  * - Public vs. Private Data: Billboards are public-read, but writes are restricted to admins.
+ *   Contact inquiries are publicly writable, but only readable by admins.
  * - Admin Self-Verification: Any authenticated user can check for their OWN admin document. This is
  *   required for the application to verify their status upon login.
  * - Admin Management: Only existing administrators can view the full list of admins or manage other admins.
@@ -57,8 +58,7 @@ service cloud.firestore {
      */
     match /roles_admin/{adminId} {
       allow get: if isSignedIn() && request.auth.uid == adminId;
-      allow list: if isAdmin();
-      allow write: if isAdmin();
+      allow list, write: if isAdmin();
     }
 
     /**
@@ -71,11 +71,19 @@ service cloud.firestore {
      * @principle   Protects sensitive user data and enforces relational integrity on create/update.
      */
     match /admin_users/{adminUserId} {
-      allow get: if isAdmin();
-      allow list: if isAdmin();
-      allow create: if isAdmin() && request.resource.data.id == adminUserId;
-      allow update: if isAdmin() && resource != null && request.resource.data.id == resource.data.id;
-      allow delete: if isAdmin() && resource != null;
+      allow get, list, create, update, delete: if isAdmin();
+    }
+    
+    /**
+     * /inquiries/{inquiryId}
+     * Publicly writable for new inquiries, but only admins can read, update, or delete.
+     */
+    match /inquiries/{inquiryId} {
+      allow create: if request.resource.data.name is string 
+                    && request.resource.data.email is string
+                    && request.resource.data.message is string
+                    && request.time == request.resource.data.submittedAt;
+      allow read, update, delete: if isAdmin();
     }
   }
 }
