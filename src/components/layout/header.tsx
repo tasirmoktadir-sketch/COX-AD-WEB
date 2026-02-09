@@ -62,9 +62,15 @@ export function Header() {
           <ThemeToggle />
           {!isUserLoading && (
             user ? (
-              <Button variant="ghost" size="icon" onClick={handleLogout} title="Logout">
-                <LogOut className="h-5 w-5" />
-              </Button>
+              <div className="flex items-center gap-4">
+                <div className="text-right text-xs">
+                  <p className="font-semibold">{user.email}</p>
+                  <p className="text-muted-foreground font-mono">{user.uid}</p>
+                </div>
+                <Button variant="ghost" size="icon" onClick={handleLogout} title="Logout">
+                  <LogOut className="h-5 w-5" />
+                </Button>
+              </div>
             ) : (
               <div className="flex items-center gap-2">
                 <Button asChild>
@@ -91,9 +97,15 @@ export function Header() {
                 <div className="pt-4">
                   {!isUserLoading && (
                     user ? (
-                      <Button onClick={handleLogout} className="w-full">
-                        <LogOut className="mr-2 h-4 w-4" /> Logout
-                      </Button>
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="text-center text-xs">
+                          <p className="font-semibold">{user.email}</p>
+                          <p className="text-muted-foreground font-mono">{user.uid}</p>
+                        </div>
+                        <Button onClick={handleLogout} className="w-full">
+                          <LogOut className="mr-2 h-4 w-4" /> Logout
+                        </Button>
+                      </div>
                     ) : (
                       <div className="flex flex-col items-center text-center gap-2">
                         <Button asChild className="w-full">
