@@ -16,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import {
   Sheet,
@@ -29,7 +29,6 @@ import {
 } from "@/components/ui/sheet"
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -56,6 +55,7 @@ import { Input } from "@/components/ui/input"
 import type { Billboard } from "@/lib/types"
 import { useBillboards } from "@/context/billboard-context"
 import { useFirestore, setDocumentNonBlocking, addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase"
+import { cn } from "@/lib/utils"
 
 const billboardFormSchema = z.object({
     name: z.string().min(2, "Name is too short"),
@@ -135,10 +135,11 @@ export function BillboardsTable() {
     setIsSheetOpen(false)
   }
   
-  const handleDelete = () => {
+  const handleDeleteConfirmed = () => {
     if (!deletingBillboard) return;
     const billboardRef = doc(firestore, 'billboards', deletingBillboard.id);
     deleteDocumentNonBlocking(billboardRef);
+    setDeletingBillboard(null);
   }
 
   return (
@@ -266,9 +267,12 @@ export function BillboardsTable() {
             </AlertDialogHeader>
             <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+            <Button
+                className={cn(buttonVariants({ variant: "destructive" }))}
+                onClick={handleDeleteConfirmed}
+            >
                 Delete
-            </AlertDialogAction>
+            </Button>
             </AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>
