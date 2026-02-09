@@ -1,3 +1,40 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "billboard-1",
+      "description": "A large billboard in a bustling city center at night.",
+      "imageUrl": "https://images.unsplash.com/photo-1506606401543-2e73709cebb4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxjaXR5JTIwbmlnaHR8ZW58MHx8fHwxNzcwNTk5NTU3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "city night"
+    },
+    {
+      "id": "billboard-2",
+      "description": "A billboard on a busy highway with traffic.",
+      "imageUrl": "https://images.unsplash.com/photo-1660925732757-1054762d916a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxoaWdod2F5JTIwdHJhZmZpY3xlbnwwfHx8fDE3NzA2MTk1ODN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "highway traffic"
+    },
+    {
+      "id": "billboard-3",
+      "description": "A digital billboard in a modern shopping district.",
+      "imageUrl": "https://images.unsplash.com/photo-1696375300630-6c9616ede777?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxzaG9wcGluZyUyMGRpc3RyaWN0fGVufDB8fHx8MTc3MDYxOTU4M3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "shopping district"
+    },
+    {
+      "id": "billboard-4",
+      "description": "A billboard alongside a suburban road.",
+      "imageUrl": "https://images.unsplash.com/photo-1711730423032-8e832733fef6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxzdWJ1cmJhbiUyMHJvYWR8ZW58MHx8fHwxNzcwNjE5NTgzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "suburban road"
+    },
+    {
+      "id": "billboard-5",
+      "description": "A billboard on the side of a tall building in a financial district.",
+      "imageUrl": "https://images.unsplash.com/photo-1768230621592-4a8750c1adaf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxidWlsZGluZyUyMGNpdHlzY2FwZXxlbnwwfHx8fDE3NzA2MTk1ODN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "building cityscape"
+    },
+    {
+      "id": "billboard-6",
+      "description": "A billboard near a popular tourist attraction.",
+      "imageUrl": "https://images.unsplash.com/photo-1567883251222-651d554b880c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx0b3VyaXN0JTIwYXR0cmFjdGlvbnxlbnwwfHx8fDE3NzA1NzM4NzV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "tourist attraction"
+    }
+  ]
 }
