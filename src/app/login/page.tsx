@@ -71,7 +71,6 @@ export default function LoginPage() {
         router.push('/admin');
       })
       .catch((error: any) => {
-        console.error(error);
         let description = 'An unknown error occurred.';
         if (error.code === 'auth/invalid-credential') {
             description = 'The email or password you entered is incorrect. Please try again.';
