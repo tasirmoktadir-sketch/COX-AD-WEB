@@ -5,6 +5,7 @@ export type Billboard = {
   size: {
     width: string;
     height: string;
+    depth?: string;
     isBothSides?: boolean;
     bothSidesMeasurement?: string;
   };

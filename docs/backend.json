@@ -56,6 +56,10 @@
               "type": "string",
               "description": "Height of the billboard."
             },
+            "depth": {
+              "type": "string",
+              "description": "Depth of the billboard."
+            },
             "isBothSides": {
               "type": "boolean",
               "description": "Indicates if the billboard is double-sided."

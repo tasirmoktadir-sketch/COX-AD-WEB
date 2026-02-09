@@ -67,6 +67,7 @@ const billboardFormSchema = z.object({
     size: z.object({
         width: z.string().nonempty("Width is required."),
         height: z.string().nonempty("Height is required."),
+        depth: z.string().optional(),
         isBothSides: z.boolean().default(false),
         bothSidesMeasurement: z.string().optional(),
     }),
@@ -90,7 +91,7 @@ export function BillboardsTable() {
         name: "",
         location: "",
         facing: "",
-        size: { width: "", height: "", isBothSides: false, bothSidesMeasurement: "" },
+        size: { width: "", height: "", depth: "", isBothSides: false, bothSidesMeasurement: "" },
         availability: 1,
         images: [],
         isPaused: false,
@@ -107,7 +108,7 @@ export function BillboardsTable() {
   const handleOpenSheet = (billboard: Billboard | null) => {
     setEditingBillboard(billboard)
     if (billboard) {
-      const size = typeof billboard.size === 'object' && billboard.size ? billboard.size : { width: '', height: '', isBothSides: false, bothSidesMeasurement: '' };
+      const size = typeof billboard.size === 'object' && billboard.size ? billboard.size : { width: '', height: '', depth: '', isBothSides: false, bothSidesMeasurement: '' };
       form.reset({
         name: billboard.name,
         location: billboard.location,
@@ -115,6 +116,7 @@ export function BillboardsTable() {
         size: {
             width: size.width,
             height: size.height,
+            depth: size.depth || '',
             isBothSides: size.isBothSides ?? false,
             bothSidesMeasurement: size.bothSidesMeasurement || '',
         },
@@ -277,9 +279,10 @@ export function BillboardsTable() {
                     <FormField control={form.control} name="facing" render={({ field }) => ( <FormItem> <FormLabel>Facing</FormLabel> <FormControl><Input placeholder="e.g., Northbound Traffic" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
                     <div className="space-y-2">
                         <Label>Size</Label>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-3 gap-4">
                             <FormField control={form.control} name="size.width" render={({ field }) => ( <FormItem> <FormLabel className="text-xs text-muted-foreground">Width</FormLabel> <FormControl><Input placeholder="e.g., 48'" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
                             <FormField control={form.control} name="size.height" render={({ field }) => ( <FormItem> <FormLabel className="text-xs text-muted-foreground">Height</FormLabel> <FormControl><Input placeholder="e.g., 14'" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                            <FormField control={form.control} name="size.depth" render={({ field }) => ( <FormItem> <FormLabel className="text-xs text-muted-foreground">Depth</FormLabel> <FormControl><Input placeholder="e.g., 2'" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
                         </div>
                         <FormField
                             control={form.control}

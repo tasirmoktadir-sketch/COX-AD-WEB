@@ -17,7 +17,7 @@ function BillboardCard({ billboard }: { billboard: Billboard }) {
   const imageDescription = placeholderImage?.description || billboard.name;
   const imageHint = placeholderImage?.imageHint || '';
   const displaySize = billboard.size && typeof billboard.size === 'object'
-    ? `${billboard.size.width} x ${billboard.size.height}${billboard.size.isBothSides ? ` (Both Sides${billboard.size.bothSidesMeasurement ? `: ${billboard.size.bothSidesMeasurement}` : ''})` : ''}`
+    ? `${billboard.size.width} x ${billboard.size.height}${billboard.size.depth ? ` x ${billboard.size.depth}` : ''}${billboard.size.isBothSides ? ` (Both Sides${billboard.size.bothSidesMeasurement ? `: ${billboard.size.bothSidesMeasurement}` : ''})` : ''}`
     : typeof (billboard.size as any) === 'string'
     ? (billboard.size as any)
     : 'N/A';
