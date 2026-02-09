@@ -53,7 +53,8 @@ export default function ContactPage() {
     
     addDocumentNonBlocking(inquiriesCollection, {
       ...values,
-      submittedAt: serverTimestamp()
+      submittedAt: serverTimestamp(),
+      read: false
     });
 
     toast({

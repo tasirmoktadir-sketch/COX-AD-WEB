@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, writeBatch, doc } from 'firebase/firestore';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -10,8 +10,8 @@ import { Footer } from '@/components/layout/footer';
 import { Loader2, Inbox } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
-// This type represents the data structure of an inquiry document in Firestore.
 type InquiryData = {
   name: string;
   email: string;
@@ -20,13 +20,13 @@ type InquiryData = {
   submittedAt: {
     seconds: number;
     nanoseconds: number;
-  } | null; // This is how Firestore Timestamps are represented when they come to the client.
+  } | null;
+  read: boolean;
 };
 
 export default function InquiriesPage() {
   const firestore = useFirestore();
 
-  // We create a memoized query to fetch inquiries, ordered by the most recent.
   const inquiriesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'inquiries'), orderBy('submittedAt', 'desc'));
@@ -34,7 +34,21 @@ export default function InquiriesPage() {
 
   const { data: inquiries, isLoading } = useCollection<InquiryData>(inquiriesQuery);
 
-  // Helper function to format the Firestore timestamp into a readable date string.
+  React.useEffect(() => {
+    if (!firestore || !inquiries || inquiries.length === 0) return;
+
+    const unreadInquiries = inquiries.filter(inq => !inq.read);
+    if (unreadInquiries.length === 0) return;
+
+    const batch = writeBatch(firestore);
+    unreadInquiries.forEach(inquiry => {
+      const inquiryRef = doc(firestore, 'inquiries', inquiry.id);
+      batch.update(inquiryRef, { read: true });
+    });
+
+    batch.commit().catch(console.error);
+  }, [inquiries, firestore]);
+
   const formatDate = (timestamp: InquiryData['submittedAt']) => {
     if (!timestamp || typeof timestamp.seconds !== 'number') return 'No date';
     try {
@@ -54,7 +68,7 @@ export default function InquiriesPage() {
           <Card>
             <CardHeader>
               <CardTitle>Received Messages</CardTitle>
-              <CardDescription>Here are the messages submitted through your contact form.</CardDescription>
+              <CardDescription>New messages are highlighted. They are marked as read once you view this page.</CardDescription>
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -73,14 +87,21 @@ export default function InquiriesPage() {
                     </TableHeader>
                     <TableBody>
                       {inquiries.map((inquiry) => (
-                        <TableRow key={inquiry.id}>
+                        <TableRow key={inquiry.id} className={cn(!inquiry.read && "bg-primary/5 font-medium")}>
                           <TableCell className="hidden align-top md:table-cell whitespace-nowrap text-muted-foreground text-xs">
                             {formatDate(inquiry.submittedAt)}
                           </TableCell>
                           <TableCell className="align-top">
-                            <div className="font-medium">{inquiry.name}</div>
-                            <div className="text-sm text-muted-foreground">{inquiry.email}</div>
-                            {inquiry.company && <Badge variant="secondary" className="mt-2">{inquiry.company}</Badge>}
+                            <div className="flex items-center gap-3">
+                              {!inquiry.read && (
+                                <div className="h-2.5 w-2.5 rounded-full bg-primary" title="Unread"></div>
+                              )}
+                              <div>
+                                <div className="font-semibold">{inquiry.name}</div>
+                                <div className="text-sm text-muted-foreground">{inquiry.email}</div>
+                                {inquiry.company && <Badge variant="secondary" className="mt-2">{inquiry.company}</Badge>}
+                              </div>
+                            </div>
                           </TableCell>
                           <TableCell className="align-top">
                             <p className="whitespace-pre-wrap text-sm">{inquiry.message}</p>
