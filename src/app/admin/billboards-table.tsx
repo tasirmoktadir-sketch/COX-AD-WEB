@@ -135,12 +135,10 @@ export function BillboardsTable() {
     setIsSheetOpen(false)
   }
   
-  const handleDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault()
+  const handleDelete = () => {
     if (!deletingBillboard) return;
     const billboardRef = doc(firestore, 'billboards', deletingBillboard.id);
     deleteDocumentNonBlocking(billboardRef);
-    setDeletingBillboard(null);
   }
 
   return (
