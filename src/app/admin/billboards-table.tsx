@@ -62,7 +62,10 @@ import { cn } from "@/lib/utils"
 const billboardFormSchema = z.object({
     name: z.string().min(2, "Name is too short"),
     location: z.string().min(5, "Location is too short"),
-    size: z.string().min(3, "Invalid size"),
+    size: z.object({
+        width: z.string().nonempty("Width is required."),
+        height: z.string().nonempty("Height is required."),
+    }),
     availability: z.coerce.number().int().min(0, "Availability cannot be negative."),
     images: z.array(z.string().url("Invalid URL format.")).min(1, "At least one image is required."),
     isPaused: z.boolean().default(false),
@@ -79,7 +82,14 @@ export function BillboardsTable() {
 
   const form = useForm<BillboardFormValues>({
     resolver: zodResolver(billboardFormSchema),
-    defaultValues: { images: [], availability: 1, isPaused: false }
+    defaultValues: {
+        name: "",
+        location: "",
+        size: { width: "", height: "" },
+        availability: 1,
+        images: [],
+        isPaused: false,
+    }
   })
   
   const { fields, append, remove } = useFieldArray({
@@ -90,23 +100,17 @@ export function BillboardsTable() {
   const handleOpenSheet = (billboard: Billboard | null) => {
     setEditingBillboard(billboard)
     if (billboard) {
+      const size = typeof billboard.size === 'object' && billboard.size ? billboard.size : { width: '', height: '' };
       form.reset({
         name: billboard.name,
         location: billboard.location,
-        size: billboard.size,
+        size: size,
         availability: billboard.availability,
         images: billboard.images,
         isPaused: billboard.isPaused ?? false,
       })
     } else {
-      form.reset({
-        name: "",
-        location: "",
-        size: "",
-        availability: 1,
-        images: [],
-        isPaused: false,
-      })
+      form.reset() // Resets to defaultValues
     }
     setIsSheetOpen(true)
   }
@@ -253,7 +257,10 @@ export function BillboardsTable() {
                     />
                     <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Name</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
                     <FormField control={form.control} name="location" render={({ field }) => ( <FormItem> <FormLabel>Location</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
-                    <FormField control={form.control} name="size" render={({ field }) => ( <FormItem> <FormLabel>Size</FormLabel> <FormControl><Input placeholder="e.g., 14' x 48'" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                    <div className="grid grid-cols-2 gap-4">
+                        <FormField control={form.control} name="size.width" render={({ field }) => ( <FormItem> <FormLabel>Width</FormLabel> <FormControl><Input placeholder="e.g., 48'" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                        <FormField control={form.control} name="size.height" render={({ field }) => ( <FormItem> <FormLabel>Height</FormLabel> <FormControl><Input placeholder="e.g., 14'" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                    </div>
                     <FormField control={form.control} name="availability" render={({ field }) => ( <FormItem> <FormLabel>Availability (pcs)</FormLabel> <FormControl><Input type="number" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
                     
                     <FormItem>

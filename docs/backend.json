@@ -41,8 +41,22 @@
           "description": "Address of the billboard."
         },
         "size": {
-          "type": "string",
-          "description": "Size of the billboard (e.g., 10ft x 20ft)."
+          "type": "object",
+          "description": "Dimensions of the billboard.",
+          "properties": {
+            "width": {
+              "type": "string",
+              "description": "Width of the billboard."
+            },
+            "height": {
+              "type": "string",
+              "description": "Height of the billboard."
+            }
+          },
+          "required": [
+            "width",
+            "height"
+          ]
         },
         "availability": {
           "type": "number",

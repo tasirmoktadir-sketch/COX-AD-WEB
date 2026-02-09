@@ -2,7 +2,10 @@ export type Billboard = {
   id: string;
   name: string;
   location: string;
-  size: string;
+  size: {
+    width: string;
+    height: string;
+  };
   availability: number;
   images: string[];
   isPaused?: boolean;

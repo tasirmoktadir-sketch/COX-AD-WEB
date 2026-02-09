@@ -16,6 +16,12 @@ function BillboardCard({ billboard }: { billboard: Billboard }) {
   const placeholderImage = placeholderImages.placeholderImages.find(img => img.imageUrl === imageUrl);
   const imageDescription = placeholderImage?.description || billboard.name;
   const imageHint = placeholderImage?.imageHint || '';
+  const displaySize = billboard.size && typeof billboard.size === 'object'
+    ? `${billboard.size.width} x ${billboard.size.height}`
+    // Backwards compatibility for old string data
+    : typeof (billboard.size as any) === 'string'
+    ? (billboard.size as any)
+    : 'N/A';
 
   return (
     <Card className="flex flex-col overflow-hidden transition-transform duration-300 ease-in-out hover:-translate-y-2 hover:shadow-2xl">
@@ -40,7 +46,7 @@ function BillboardCard({ billboard }: { billboard: Billboard }) {
         </p>
         <p className="flex items-center text-muted-foreground">
           <Maximize className="mr-2 h-4 w-4 text-primary" />
-          Size: {billboard.size}
+          Size: {displaySize}
         </p>
         <p className="flex items-center text-muted-foreground">
           <Package className="mr-2 h-4 w-4 text-primary" />
