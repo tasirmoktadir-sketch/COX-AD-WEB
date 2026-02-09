@@ -7,4 +7,5 @@ export type Billboard = {
   dimensions: string;
   weeklyImpressions: number;
   imageId: string;
+  imageUrl?: string;
 };

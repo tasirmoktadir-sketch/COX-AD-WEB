@@ -11,19 +11,21 @@ import { MapView } from '@/components/billboards/map-view';
 import placeholderImages from '@/lib/placeholder-images.json';
 
 function BillboardCard({ billboard }: { billboard: Billboard }) {
-  const image = placeholderImages.placeholderImages.find(img => img.id === billboard.imageId);
+  const placeholderImage = placeholderImages.placeholderImages.find(img => img.id === billboard.imageId);
+  const imageUrl = billboard.imageUrl || placeholderImage?.imageUrl;
+  const imageDescription = placeholderImage?.description || billboard.name;
 
   return (
     <Card className="flex flex-col overflow-hidden transition-transform duration-300 ease-in-out hover:-translate-y-2 hover:shadow-2xl">
       <CardHeader className="p-0">
-        {image && (
+        {imageUrl && (
           <div className="aspect-[4/3] relative">
             <Image
-              src={image.imageUrl}
-              alt={billboard.name}
+              src={imageUrl}
+              alt={imageDescription}
               fill
               className="object-cover"
-              data-ai-hint={image.imageHint}
+              data-ai-hint={placeholderImage?.imageHint || ''}
             />
           </div>
         )}

@@ -49,14 +49,15 @@ const editFormSchema = z.object({
   location: z.string().min(5, "Location is too short"),
   dimensions: z.string().min(3, "Invalid dimensions"),
   weeklyImpressions: z.coerce.number().int().positive("Must be a positive number"),
-  imageId: z.string({ required_error: "Please select an image." }),
+  imageId: z.string().optional(),
 })
 
 type EditFormValues = z.infer<typeof editFormSchema>
 
 export function BillboardsTable({ initialData }: { initialData: Billboard[] }) {
-  const [billboards, setBillboards] = React.useState(initialData)
+  const [billboards, setBillboards] = React.useState<Billboard[]>(initialData)
   const [editingBillboard, setEditingBillboard] = React.useState<Billboard | null>(null)
+  const [imagePreview, setImagePreview] = React.useState<string | null>(null)
 
   const form = useForm<EditFormValues>({
     resolver: zodResolver(editFormSchema),
@@ -70,7 +71,16 @@ export function BillboardsTable({ initialData }: { initialData: Billboard[] }) {
   })
 
   const selectedImageId = form.watch("imageId")
-  const selectedImage = placeholderImages.placeholderImages.find(img => img.id === selectedImageId)
+
+  React.useEffect(() => {
+    if (selectedImageId) {
+      const selectedImage = placeholderImages.placeholderImages.find(img => img.id === selectedImageId)
+      if (selectedImage) {
+        setImagePreview(selectedImage.imageUrl)
+      }
+    }
+  }, [selectedImageId])
+
 
   const handleEditClick = (billboard: Billboard) => {
     setEditingBillboard(billboard)
@@ -81,15 +91,34 @@ export function BillboardsTable({ initialData }: { initialData: Billboard[] }) {
       weeklyImpressions: billboard.weeklyImpressions,
       imageId: billboard.imageId,
     })
+    const image = placeholderImages.placeholderImages.find(img => img.id === billboard.imageId);
+    setImagePreview(billboard.imageUrl || image?.imageUrl || null)
   }
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      form.setValue("imageId", undefined, { shouldValidate: true });
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const onSubmit = (values: EditFormValues) => {
     if (!editingBillboard) return;
     
-    // In a real app, you'd call a server action here.
-    // For now, we just update the local state.
     const updatedBillboards = billboards.map((b) =>
-      b.id === editingBillboard.id ? { ...b, ...values } : b
+      b.id === editingBillboard.id 
+      ? { 
+          ...b, 
+          ...values,
+          imageId: values.imageId || b.imageId,
+          imageUrl: imagePreview || b.imageUrl,
+        } 
+      : b
     )
     setBillboards(updatedBillboards)
     
@@ -99,6 +128,14 @@ export function BillboardsTable({ initialData }: { initialData: Billboard[] }) {
     })
     
     setEditingBillboard(null)
+    setImagePreview(null);
+  }
+
+  const onSheetOpenChange = (open: boolean) => {
+    if (!open) {
+      setEditingBillboard(null);
+      setImagePreview(null);
+    }
   }
 
   return (
@@ -135,7 +172,7 @@ export function BillboardsTable({ initialData }: { initialData: Billboard[] }) {
             </Table>
         </div>
 
-        <Sheet open={!!editingBillboard} onOpenChange={(open) => !open && setEditingBillboard(null)}>
+        <Sheet open={!!editingBillboard} onOpenChange={onSheetOpenChange}>
           <SheetContent className="sm:max-w-lg">
             {editingBillboard && (
               <Form {...form}>
@@ -205,10 +242,10 @@ export function BillboardsTable({ initialData }: { initialData: Billboard[] }) {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Billboard Image</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value || ""}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select an image" />
+                                <SelectValue placeholder="Select a stock image" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -223,11 +260,25 @@ export function BillboardsTable({ initialData }: { initialData: Billboard[] }) {
                         </FormItem>
                       )}
                     />
-                    {selectedImage && (
-                        <div className="rounded-md overflow-hidden border aspect-video relative bg-muted">
+                    <div className="relative flex items-center justify-center my-4">
+                        <div className="flex-grow border-t border-muted"></div>
+                        <span className="flex-shrink mx-4 text-xs text-muted-foreground uppercase">Or</span>
+                        <div className="flex-grow border-t border-muted"></div>
+                    </div>
+
+                    <FormItem>
+                        <FormLabel>Upload Custom Image</FormLabel>
+                        <FormControl>
+                            <Input type="file" accept="image/*" onChange={handleFileChange} className="file:text-primary file:font-medium" />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    
+                    {imagePreview && (
+                        <div className="rounded-md overflow-hidden border aspect-video relative bg-muted mt-4">
                             <Image 
-                                src={selectedImage.imageUrl}
-                                alt={selectedImage.description}
+                                src={imagePreview}
+                                alt={editingBillboard.name}
                                 fill
                                 className="object-cover"
                             />
