@@ -49,28 +49,30 @@ service cloud.firestore {
     /**
      * @description Defines rules for the 'billboards' collection. This data is publicly
      *              readable by all users (including anonymous visitors), but can only be
-     *              created, modified, or deleted by authenticated users.
+     *              created, modified, or deleted by authenticated admins.
      * @path        /billboards/{billboardId}
-     * @allow       (get, list) by anyone, authenticated or not.
-     * @allow       (write) by any signed-in user.
-     * @deny        (write) by any non-authenticated user.
-     * @principle   Public read with authenticated writes.
+     * @allow       (read) by anyone, authenticated or not.
+     * @allow       (write) by any admin user.
+     * @principle   Public read with admin-only writes.
      */
     match /billboards/{billboardId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     /**
      * @description Defines rules for the 'roles_admin' collection. This collection is the
      *              source of truth for admin privileges. The existence of a document
      *              confers admin rights. Only other admins can manage this collection.
+     *              Any authenticated user can read their own document to check their status.
      * @path        /roles_admin/{adminId}
-     * @allow       (get, list, create, update, delete) by a user who is already an admin.
-     * @deny        Any access by a non-admin user. This prevents self-promotion to admin status.
-     * @principle   Restricts sensitive access control data to privileged users only.
+     * @allow       (get) by a user who is already an admin OR if the user is reading their own document.
+     * @allow       (list, create, update, delete) by a user who is already an admin.
+     * @deny        Any other access. This prevents self-promotion to admin status.
+     * @principle   Restricts sensitive access control data to privileged users only, with a self-check exception.
      */
     match /roles_admin/{adminId} {
-      allow get: if isAdmin();
+      allow get: if isAdmin() || request.auth.uid == adminId;
       allow list: if isAdmin();
       allow create: if isAdmin();
       allow update: if isAdmin() && resource != null;
