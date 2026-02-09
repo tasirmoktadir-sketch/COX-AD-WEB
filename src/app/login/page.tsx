@@ -50,19 +50,24 @@ export default function LoginPage() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     try {
-      initiateEmailSignIn(auth, values.email, values.password);
+      await initiateEmailSignIn(auth, values.email, values.password);
       // The auth state change will be caught by the useUser hook and trigger redirection
-      // We'll show a toast and wait for redirection
       toast({
-        title: 'Signing in...',
-        description: 'You will be redirected shortly.',
+        title: 'Sign-in successful!',
+        description: 'You will be redirected to the admin dashboard shortly.',
       });
     } catch (error: any) {
       console.error(error);
+      let description = 'An unknown error occurred.';
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+          description = 'The email or password you entered is incorrect. Please try again.';
+      } else {
+          description = error.message;
+      }
       toast({
         variant: 'destructive',
         title: 'Sign-in failed',
-        description: error.message || 'An unknown error occurred.',
+        description: description,
       });
       setIsSubmitting(false);
     }
