@@ -83,7 +83,8 @@ service cloud.firestore {
                     && request.resource.data.email is string
                     && request.resource.data.message is string
                     && request.time == request.resource.data.submittedAt;
-      allow read, update, delete: if isAdmin();
+      allow list: if isAdmin();
+      allow get, update, delete: if isAdmin();
     }
   }
 }
