@@ -62,9 +62,11 @@ import { cn } from "@/lib/utils"
 const billboardFormSchema = z.object({
     name: z.string().min(2, "Name is too short"),
     location: z.string().min(5, "Location is too short"),
+    facing: z.string().min(2, "Facing description is too short."),
     size: z.object({
         width: z.string().nonempty("Width is required."),
         height: z.string().nonempty("Height is required."),
+        isBothSides: z.boolean().default(false),
     }),
     availability: z.coerce.number().int().min(0, "Availability cannot be negative."),
     images: z.array(z.string().url("Invalid URL format.")).min(1, "At least one image is required."),
@@ -85,7 +87,8 @@ export function BillboardsTable() {
     defaultValues: {
         name: "",
         location: "",
-        size: { width: "", height: "" },
+        facing: "",
+        size: { width: "", height: "", isBothSides: false },
         availability: 1,
         images: [],
         isPaused: false,
@@ -100,11 +103,16 @@ export function BillboardsTable() {
   const handleOpenSheet = (billboard: Billboard | null) => {
     setEditingBillboard(billboard)
     if (billboard) {
-      const size = typeof billboard.size === 'object' && billboard.size ? billboard.size : { width: '', height: '' };
+      const size = typeof billboard.size === 'object' && billboard.size ? billboard.size : { width: '', height: '', isBothSides: false };
       form.reset({
         name: billboard.name,
         location: billboard.location,
-        size: size,
+        facing: billboard.facing || "",
+        size: {
+            width: size.width,
+            height: size.height,
+            isBothSides: size.isBothSides ?? false,
+        },
         availability: billboard.availability,
         images: billboard.images,
         isPaused: billboard.isPaused ?? false,
@@ -257,9 +265,33 @@ export function BillboardsTable() {
                     />
                     <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Name</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
                     <FormField control={form.control} name="location" render={({ field }) => ( <FormItem> <FormLabel>Location</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
-                    <div className="grid grid-cols-2 gap-4">
-                        <FormField control={form.control} name="size.width" render={({ field }) => ( <FormItem> <FormLabel>Width</FormLabel> <FormControl><Input placeholder="e.g., 48'" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
-                        <FormField control={form.control} name="size.height" render={({ field }) => ( <FormItem> <FormLabel>Height</FormLabel> <FormControl><Input placeholder="e.g., 14'" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                    <FormField control={form.control} name="facing" render={({ field }) => ( <FormItem> <FormLabel>Facing</FormLabel> <FormControl><Input placeholder="e.g., Northbound Traffic" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                    <div className="space-y-2">
+                        <Label>Size</Label>
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField control={form.control} name="size.width" render={({ field }) => ( <FormItem> <FormLabel className="text-xs text-muted-foreground">Width</FormLabel> <FormControl><Input placeholder="e.g., 48'" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                            <FormField control={form.control} name="size.height" render={({ field }) => ( <FormItem> <FormLabel className="text-xs text-muted-foreground">Height</FormLabel> <FormControl><Input placeholder="e.g., 14'" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                        </div>
+                        <FormField
+                            control={form.control}
+                            name="size.isBothSides"
+                            render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm mt-4">
+                                <div className="space-y-0.5">
+                                <FormLabel>Both Sides</FormLabel>
+                                <FormDescription>
+                                    Indicates if the billboard is double-sided.
+                                </FormDescription>
+                                </div>
+                                <FormControl>
+                                <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                />
+                                </FormControl>
+                            </FormItem>
+                            )}
+                        />
                     </div>
                     <FormField control={form.control} name="availability" render={({ field }) => ( <FormItem> <FormLabel>Availability (pcs)</FormLabel> <FormControl><Input type="number" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
                     

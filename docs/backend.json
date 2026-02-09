@@ -51,12 +51,20 @@
             "height": {
               "type": "string",
               "description": "Height of the billboard."
+            },
+            "isBothSides": {
+              "type": "boolean",
+              "description": "Indicates if the billboard is double-sided."
             }
           },
           "required": [
             "width",
             "height"
           ]
+        },
+        "facing": {
+          "type": "string",
+          "description": "The direction the billboard faces (e.g., North, Southbound traffic)."
         },
         "availability": {
           "type": "number",
@@ -80,7 +88,8 @@
         "location",
         "size",
         "availability",
-        "images"
+        "images",
+        "facing"
       ]
     },
     "ContactInquiry": {

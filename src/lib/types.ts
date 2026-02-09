@@ -5,7 +5,9 @@ export type Billboard = {
   size: {
     width: string;
     height: string;
+    isBothSides?: boolean;
   };
+  facing: string;
   availability: number;
   images: string[];
   isPaused?: boolean;
