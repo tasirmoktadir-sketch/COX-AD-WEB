@@ -63,7 +63,6 @@ import { cn } from "@/lib/utils"
 const billboardFormSchema = z.object({
     name: z.string().min(2, "Name is too short"),
     location: z.string().min(5, "Location is too short"),
-    facing: z.string().min(2, "Facing description is too short."),
     size: z.object({
         width: z.string().nonempty("Width is required."),
         height: z.string().nonempty("Height is required."),
@@ -88,7 +87,6 @@ export function BillboardsTable() {
     defaultValues: {
         name: "",
         location: "",
-        facing: "",
         size: { width: "", height: "", isBothSides: false },
         availability: 1,
         images: [],
@@ -108,7 +106,6 @@ export function BillboardsTable() {
       form.reset({
         name: billboard.name,
         location: billboard.location,
-        facing: billboard.facing || "",
         size: {
             width: size.width,
             height: size.height,
@@ -159,10 +156,9 @@ export function BillboardsTable() {
   
   const handleDeleteConfirmed = () => {
     if (!deletingBillboard) return;
-    const billboardRef = doc(firestore, 'billboards', deletingBillboard.id);
-    deleteDocumentNonBlocking(billboardRef);
+    deleteDocumentNonBlocking(doc(firestore, "billboards", deletingBillboard.id));
     setDeletingBillboard(null);
-  }
+  };
 
   return (
     <>
@@ -266,7 +262,6 @@ export function BillboardsTable() {
                     />
                     <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Name</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
                     <FormField control={form.control} name="location" render={({ field }) => ( <FormItem> <FormLabel>Location</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
-                    <FormField control={form.control} name="facing" render={({ field }) => ( <FormItem> <FormLabel>Facing</FormLabel> <FormControl><Input placeholder="e.g., Northbound Traffic" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
                     <div className="space-y-2">
                         <Label>Size</Label>
                         <div className="grid grid-cols-2 gap-4">

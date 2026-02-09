@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Map, Maximize, Package, Compass } from 'lucide-react';
+import { Map, Maximize, Package } from 'lucide-react';
 import type { Billboard } from '@/lib/types';
 import Link from 'next/link';
 import { Header } from '@/components/layout/header';
@@ -44,12 +44,6 @@ function BillboardCard({ billboard }: { billboard: Billboard }) {
           <Map className="mr-2 h-4 w-4 text-primary" />
           {billboard.location}
         </p>
-        {billboard.facing && (
-            <p className="flex items-center text-muted-foreground">
-                <Compass className="mr-2 h-4 w-4 text-primary" />
-                Facing: {billboard.facing}
-            </p>
-        )}
         <p className="flex items-center text-muted-foreground">
           <Maximize className="mr-2 h-4 w-4 text-primary" />
           Size: {displaySize}

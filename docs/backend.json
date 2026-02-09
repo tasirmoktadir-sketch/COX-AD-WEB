@@ -62,10 +62,6 @@
             "height"
           ]
         },
-        "facing": {
-          "type": "string",
-          "description": "The direction the billboard faces (e.g., North, Southbound traffic)."
-        },
         "availability": {
           "type": "number",
           "description": "Number of available units (pieces)."
@@ -88,8 +84,7 @@
         "location",
         "size",
         "availability",
-        "images",
-        "facing"
+        "images"
       ]
     },
     "ContactInquiry": {

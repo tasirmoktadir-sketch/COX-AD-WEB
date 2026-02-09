@@ -7,7 +7,6 @@ export type Billboard = {
     height: string;
     isBothSides?: boolean;
   };
-  facing: string;
   availability: number;
   images: string[];
   isPaused?: boolean;
