@@ -53,7 +53,6 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { toast } from "@/hooks/use-toast"
 import type { Billboard } from "@/lib/types"
 import { useBillboards } from "@/context/billboard-context"
 import { useFirestore, setDocumentNonBlocking, addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase"
@@ -129,11 +128,9 @@ export function BillboardsTable() {
     if (editingBillboard) {
       const billboardRef = doc(firestore, 'billboards', editingBillboard.id);
       setDocumentNonBlocking(billboardRef, values, { merge: true });
-      toast({ title: "Billboard Updated", description: `Successfully updated "${values.name}".` })
     } else {
       const billboardsCollection = collection(firestore, 'billboards');
       addDocumentNonBlocking(billboardsCollection, values);
-      toast({ title: "Billboard Created", description: `Successfully created "${values.name}".` })
     }
     setIsSheetOpen(false)
   }
@@ -226,7 +223,7 @@ export function BillboardsTable() {
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                             {fields.map((field, index) => (
                                 <div key={field.id} className="relative aspect-video rounded-md overflow-hidden group bg-muted">
-                                    <Image src={field.value} alt={`Billboard Image ${index + 1}`} fill className="object-cover"/>
+                                    {field.value && <Image src={field.value} alt={`Billboard Image ${index + 1}`} fill className="object-cover"/>}
                                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                         <Button variant="destructive" size="icon" type="button" onClick={() => remove(index)}>
                                             <X className="h-4 w-4" />
