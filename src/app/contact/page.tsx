@@ -1,79 +1,97 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { collection, serverTimestamp } from "firebase/firestore";
-
+import * as React from 'react';
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/hooks/use-toast";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { useFirestore, addDocumentNonBlocking } from "@/firebase";
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
 
-const formSchema = z.object({
-  name: z.string().min(2, {
-    message: "Name must be at least 2 characters.",
-  }),
-  email: z.string().email({
-    message: "Please enter a valid email address.",
-  }),
-  contactNumber: z.string().optional(),
-  company: z.string().optional(),
-  message: z.string().min(10, {
-    message: "Message must be at least 10 characters.",
-  }),
-});
+type FormState = {
+  succeeded: boolean;
+  submitting: boolean;
+  errors: { field?: string, message: string }[] | null;
+}
 
 export default function ContactPage() {
-  const firestore = useFirestore();
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      contactNumber: "",
-      company: "",
-      message: "",
-    },
+  const { toast } = useToast();
+  const [state, setState] = React.useState<FormState>({
+    succeeded: false,
+    submitting: false,
+    errors: null
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!firestore) {
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Database service is not available. Please try again later.",
-        });
-        return;
-    }
-    
-    const inquiriesCollection = collection(firestore, 'inquiries');
-    addDocumentNonBlocking(inquiriesCollection, {
-        ...values,
-        company: values.company || '',
-        contactNumber: values.contactNumber || '',
-        read: false,
-        submittedAt: serverTimestamp(),
-    });
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setState(prevState => ({ ...prevState, submitting: true, errors: null }));
 
-    toast({
-      title: "Inquiry Sent!",
-      description: "Thank you for your message. We'll be in touch shortly.",
-    });
-    form.reset();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+
+    try {
+      const response = await fetch("https://formspree.io/f/xkovgbrw", {
+        method: "POST",
+        body: data,
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        setState({ succeeded: true, submitting: false, errors: null });
+        form.reset();
+      } else {
+        const responseData = await response.json();
+        if (responseData.errors) {
+            const formErrors = responseData.errors.map((error: any) => ({ field: error.field, message: error.message }));
+            setState(prevState => ({ ...prevState, errors: formErrors, submitting: false }));
+            toast({
+              variant: "destructive",
+              title: "Submission Error",
+              description: "Please check the form for errors and try again.",
+            });
+        } else {
+          throw new Error("An unknown error occurred on submission.");
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      setState(prevState => ({ ...prevState, submitting: false, errors: [{message: 'Could not send your message. Please try again later.'}] }));
+      toast({
+        variant: "destructive",
+        title: "Oh no! Something went wrong.",
+        description: "Could not send your message. Please try again later.",
+      });
+    }
+  };
+  
+  const getErrorMessage = (fieldName: string) => {
+    if (!state.errors) return null;
+    const error = state.errors.find(e => (e.field && e.field.toLowerCase().includes(fieldName.toLowerCase())) || (!e.field && fieldName === 'form'));
+    return error ? <p className="text-sm font-medium text-destructive">{error.message}</p> : null;
+  }
+
+  if (state.succeeded) {
+      return (
+          <>
+            <Header />
+            <main className="flex-grow container mx-auto px-4 py-12 md:py-20 flex items-center justify-center">
+                <Card className="w-full max-w-2xl shadow-xl bg-card/80 backdrop-blur-lg">
+                    <CardHeader className="text-center">
+                        <CardTitle className="font-headline text-3xl">Thank You!</CardTitle>
+                        <CardDescription className="text-lg">
+                            Your message has been sent. We'll be in touch shortly.
+                        </CardDescription>
+                    </CardHeader>
+                </Card>
+            </main>
+            <Footer />
+          </>
+      );
   }
 
   return (
@@ -89,85 +107,50 @@ export default function ContactPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Full Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="John Doe" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email Address</FormLabel>
-                        <FormControl>
-                          <Input placeholder="you@company.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                   <FormField
-                    control={form.control}
-                    name="contactNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Contact Number (Optional)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="+1 (555) 123-4567" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="company"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Company (Optional)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Your Company Inc." {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="message"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Your Message</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Tell us about your advertising goals..."
-                            className="min-h-[150px]"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          The more details you provide, the better we can assist you.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground transition-transform duration-300 hover:scale-105" disabled={form.formState.isSubmitting}>
-                    Send Inquiry
-                  </Button>
-                </form>
-              </Form>
+              <form onSubmit={handleSubmit} className="space-y-8">
+                <div className="space-y-2">
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input id="name" type="text" name="name" placeholder="John Doe" required />
+                    {getErrorMessage('name')}
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="email">Email Address</Label>
+                    <Input id="email" type="email" name="email" placeholder="you@company.com" required />
+                    {getErrorMessage('email')}
+                </div>
+                
+                <div className="space-y-2">
+                    <Label htmlFor="contactNumber">Contact Number (Optional)</Label>
+                    <Input id="contactNumber" type="tel" name="contactNumber" placeholder="+1 (555) 123-4567" />
+                     {getErrorMessage('contactNumber')}
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="company">Company (Optional)</Label>
+                    <Input id="company" type="text" name="company" placeholder="Your Company Inc." />
+                     {getErrorMessage('company')}
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="message">Your Message</Label>
+                    <Textarea id="message" name="message" placeholder="Tell us about your advertising goals..." className="min-h-[150px]" required />
+                    <p className="text-sm text-muted-foreground">The more details you provide, the better we can assist you.</p>
+                     {getErrorMessage('message')}
+                </div>
+                
+                {getErrorMessage('form')}
+
+                <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground transition-transform duration-300 hover:scale-105" disabled={state.submitting}>
+                  {state.submitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Sending...
+                      </>
+                    ) : "Send Inquiry"
+                  }
+                </Button>
+              </form>
             </CardContent>
           </Card>
         </div>
