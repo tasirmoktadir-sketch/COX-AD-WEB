@@ -21,14 +21,15 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const isAdmin = !!isAdminDoc;
 
   useEffect(() => {
+    // We only want to check for redirects after all loading is complete.
     const isAuthCheckComplete = !isUserLoading && !isAdminLoading;
 
     if (isAuthCheckComplete) {
       if (!user) {
-        // Not authenticated, redirect to login
+        // If not logged in after checks, redirect to login.
         router.replace('/login');
       } else if (!isAdmin) {
-        // Authenticated but not an admin, redirect home with a message
+        // If logged in but not an admin, show error and redirect home.
         toast({
           variant: 'destructive',
           title: 'Access Denied',
@@ -39,9 +40,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     }
   }, [user, isAdmin, isUserLoading, isAdminLoading, router]);
 
-  // While checking auth or admin status, show a loader.
-  // The useEffect will handle redirection. If we get past this, the user is an authorized admin.
-  if (isUserLoading || isAdminLoading || !isAdmin) {
+  // While we are checking user auth OR admin role, show a loader.
+  if (isUserLoading || isAdminLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-16 w-16 animate-spin" />
@@ -49,5 +49,16 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  return <>{children}</>;
+  // After loading, if the user is a confirmed admin, show the dashboard.
+  if (isAdmin) {
+    return <>{children}</>;
+  }
+
+  // If they are not an admin, the useEffect above will trigger a redirect.
+  // In the meantime, show a loader to prevent any content flashing.
+  return (
+    <div className="flex h-screen items-center justify-center">
+      <Loader2 className="h-16 w-16 animate-spin" />
+    </div>
+  );
 }
