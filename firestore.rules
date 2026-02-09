@@ -49,18 +49,18 @@ service cloud.firestore {
     /**
      * @description Defines rules for the 'billboards' collection. This data is publicly
      *              readable by all users (including anonymous visitors), but can only be
-     *              created, modified, or deleted by authenticated administrators.
+     *              created, modified, or deleted by authenticated users.
      * @path        /billboards/{billboardId}
      * @allow       (get, list) by anyone, authenticated or not.
-     * @allow       (create, update, delete) by a user with an admin role.
-     * @deny        (create, update, delete) by any non-admin user.
-     * @principle   Public read with role-based writes. Separates public consumption from privileged modification.
+     * @allow       (create, update, delete) by any signed-in user.
+     * @deny        (create, update, delete) by any non-authenticated user.
+     * @principle   Public read with authenticated writes.
      */
     match /billboards/{billboardId} {
       allow get, list: if true;
-      allow create: if isAdmin();
-      allow update: if isAdmin() && resource != null;
-      allow delete: if isAdmin() && resource != null;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource != null;
+      allow delete: if isSignedIn() && resource != null;
     }
 
     /**
