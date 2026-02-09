@@ -72,11 +72,11 @@ service cloud.firestore {
      * @principle   Restricts sensitive access control data to privileged users only, with a self-check exception.
      */
     match /roles_admin/{adminId} {
-      allow get: if isAdmin() || request.auth.uid == adminId;
+      allow get: if isSignedIn();
       allow list: if isAdmin();
       allow create: if isAdmin();
-      allow update: if isAdmin() && resource != null;
-      allow delete: if isAdmin() && resource != null;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     /**
