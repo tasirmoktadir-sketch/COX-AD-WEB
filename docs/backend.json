@@ -40,6 +40,10 @@
           "type": "string",
           "description": "Address of the billboard."
         },
+        "facing": {
+          "type": "string",
+          "description": "The direction the billboard is facing (e.g., Northbound Traffic)."
+        },
         "size": {
           "type": "object",
           "description": "Dimensions of the billboard.",
@@ -55,6 +59,10 @@
             "isBothSides": {
               "type": "boolean",
               "description": "Indicates if the billboard is double-sided."
+            },
+            "bothSidesMeasurement": {
+              "type": "string",
+              "description": "Specific measurement for the second side if applicable."
             }
           },
           "required": [

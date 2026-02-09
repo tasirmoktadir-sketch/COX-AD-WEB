@@ -63,10 +63,12 @@ import { cn } from "@/lib/utils"
 const billboardFormSchema = z.object({
     name: z.string().min(2, "Name is too short"),
     location: z.string().min(5, "Location is too short"),
+    facing: z.string().optional(),
     size: z.object({
         width: z.string().nonempty("Width is required."),
         height: z.string().nonempty("Height is required."),
         isBothSides: z.boolean().default(false),
+        bothSidesMeasurement: z.string().optional(),
     }),
     availability: z.coerce.number().int().min(0, "Availability cannot be negative."),
     images: z.array(z.string().url("Invalid URL format.")).min(1, "At least one image is required."),
@@ -80,14 +82,15 @@ export function BillboardsTable() {
   const firestore = useFirestore()
   const [isSheetOpen, setIsSheetOpen] = React.useState(false)
   const [editingBillboard, setEditingBillboard] = React.useState<Billboard | null>(null)
-  const [deletingBillboard, setDeletingBillboard] = React.useState<Billboard | null>(null)
+  const [deletingBillboardId, setDeletingBillboardId] = React.useState<string | null>(null);
 
   const form = useForm<BillboardFormValues>({
     resolver: zodResolver(billboardFormSchema),
     defaultValues: {
         name: "",
         location: "",
-        size: { width: "", height: "", isBothSides: false },
+        facing: "",
+        size: { width: "", height: "", isBothSides: false, bothSidesMeasurement: "" },
         availability: 1,
         images: [],
         isPaused: false,
@@ -99,17 +102,21 @@ export function BillboardsTable() {
     name: "images"
   });
 
+  const isBothSides = form.watch("size.isBothSides");
+
   const handleOpenSheet = (billboard: Billboard | null) => {
     setEditingBillboard(billboard)
     if (billboard) {
-      const size = typeof billboard.size === 'object' && billboard.size ? billboard.size : { width: '', height: '', isBothSides: false };
+      const size = typeof billboard.size === 'object' && billboard.size ? billboard.size : { width: '', height: '', isBothSides: false, bothSidesMeasurement: '' };
       form.reset({
         name: billboard.name,
         location: billboard.location,
+        facing: billboard.facing || '',
         size: {
             width: size.width,
             height: size.height,
             isBothSides: size.isBothSides ?? false,
+            bothSidesMeasurement: size.bothSidesMeasurement || '',
         },
         availability: billboard.availability,
         images: billboard.images,
@@ -154,11 +161,16 @@ export function BillboardsTable() {
     updateDocumentNonBlocking(billboardRef, { isPaused: !billboard.isPaused });
   }
   
-  const handleDeleteConfirmed = () => {
-    if (!deletingBillboard) return;
-    deleteDocumentNonBlocking(doc(firestore, "billboards", deletingBillboard.id));
-    setDeletingBillboard(null);
+  const handleDeleteConfirmed = (event: React.MouseEvent) => {
+    event.preventDefault();
+    if (!deletingBillboardId) return;
+    deleteDocumentNonBlocking(doc(firestore, "billboards", deletingBillboardId));
+    setDeletingBillboardId(null);
   };
+  
+  const deletingBillboard = React.useMemo(() => 
+    billboards.find(b => b.id === deletingBillboardId), 
+  [billboards, deletingBillboardId]);
 
   return (
     <>
@@ -212,7 +224,7 @@ export function BillboardsTable() {
                                     Edit
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => setDeletingBillboard(billboard)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                <DropdownMenuItem onClick={() => setDeletingBillboardId(billboard.id)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
                                     Delete
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -262,6 +274,7 @@ export function BillboardsTable() {
                     />
                     <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Name</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
                     <FormField control={form.control} name="location" render={({ field }) => ( <FormItem> <FormLabel>Location</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                    <FormField control={form.control} name="facing" render={({ field }) => ( <FormItem> <FormLabel>Facing</FormLabel> <FormControl><Input placeholder="e.g., Northbound Traffic" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
                     <div className="space-y-2">
                         <Label>Size</Label>
                         <div className="grid grid-cols-2 gap-4">
@@ -288,6 +301,20 @@ export function BillboardsTable() {
                             </FormItem>
                             )}
                         />
+                         {isBothSides && (
+                            <FormField 
+                                control={form.control} 
+                                name="size.bothSidesMeasurement" 
+                                render={({ field }) => ( 
+                                    <FormItem className="mt-4"> 
+                                        <FormLabel>Both Sides Measurement</FormLabel> 
+                                        <FormControl><Input placeholder="e.g., 20' x 10'" {...field} /></FormControl> 
+                                        <FormDescription>Specific measurement for the second side.</FormDescription>
+                                        <FormMessage /> 
+                                    </FormItem> 
+                                )}
+                            />
+                        )}
                     </div>
                     <FormField control={form.control} name="availability" render={({ field }) => ( <FormItem> <FormLabel>Availability (pcs)</FormLabel> <FormControl><Input type="number" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
                     
@@ -331,25 +358,25 @@ export function BillboardsTable() {
         </SheetContent>
     </Sheet>
 
-    <AlertDialog open={!!deletingBillboard} onOpenChange={(open) => !open && setDeletingBillboard(null)}>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the billboard
-                <span className="font-semibold"> "{deletingBillboard?.name}"</span>.
-            </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <Button variant="ghost" onClick={() => setDeletingBillboard(null)}>Cancel</Button>
-                <Button
-                    className={cn(buttonVariants({ variant: "destructive" }))}
-                    onClick={handleDeleteConfirmed}
-                >
-                    Delete
-                </Button>
-            </AlertDialogFooter>
-        </AlertDialogContent>
+    <AlertDialog open={!!deletingBillboardId} onOpenChange={(open) => !open && setDeletingBillboardId(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action cannot be undone. This will permanently delete the billboard
+            <span className="font-semibold"> "{deletingBillboard?.name}"</span>.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <Button variant="ghost" onClick={() => setDeletingBillboardId(null)}>Cancel</Button>
+          <Button
+            className={cn(buttonVariants({ variant: "destructive" }))}
+            onClick={handleDeleteConfirmed}
+          >
+            Delete
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
     </AlertDialog>
     </>
   )

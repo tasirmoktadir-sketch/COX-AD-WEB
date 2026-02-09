@@ -6,8 +6,10 @@ export type Billboard = {
     width: string;
     height: string;
     isBothSides?: boolean;
+    bothSidesMeasurement?: string;
   };
   availability: number;
   images: string[];
   isPaused?: boolean;
+  facing?: string;
 };
