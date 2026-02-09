@@ -5,7 +5,15 @@ import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu, Blocks, LogOut } from "lucide-react"
+import { Menu, Blocks, LogOut, User } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useUser, useAuth } from "@/firebase"
 import { signOut } from 'firebase/auth';
@@ -62,15 +70,26 @@ export function Header() {
           <ThemeToggle />
           {!isUserLoading && (
             user ? (
-              <div className="flex items-center gap-4">
-                <div className="text-right text-xs">
-                  <p className="font-semibold">{user.email}</p>
-                  <p className="text-muted-foreground font-mono">{user.uid}</p>
-                </div>
-                <Button variant="ghost" size="icon" onClick={handleLogout} title="Logout">
-                  <LogOut className="h-5 w-5" />
-                </Button>
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full">
+                    <User className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <div className="px-2 py-1.5 text-sm">
+                    <p className="font-semibold truncate" title={user.email || 'No email'}>{user.email || 'Anonymous User'}</p>
+                    <p className="text-xs text-muted-foreground font-mono truncate" title={user.uid}>{user.uid}</p>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Logout</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
               <div className="flex items-center gap-2">
                 <Button asChild>
