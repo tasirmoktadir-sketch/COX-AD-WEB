@@ -40,14 +40,6 @@
           "type": "string",
           "description": "Address of the billboard."
         },
-        "lat": {
-          "type": "number",
-          "description": "Latitude of the billboard location."
-        },
-        "lng": {
-          "type": "number",
-          "description": "Longitude of the billboard location."
-        },
         "size": {
           "type": "string",
           "description": "Size of the billboard (e.g., 10ft x 20ft)."
@@ -68,8 +60,6 @@
       "required": [
         "name",
         "location",
-        "lat",
-        "lng",
         "size",
         "availability",
         "images"

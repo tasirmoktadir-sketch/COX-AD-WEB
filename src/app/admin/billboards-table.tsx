@@ -61,8 +61,6 @@ import { useFirestore, setDocumentNonBlocking, addDocumentNonBlocking, deleteDoc
 const billboardFormSchema = z.object({
     name: z.string().min(2, "Name is too short"),
     location: z.string().min(5, "Location is too short"),
-    lat: z.coerce.number().min(-90).max(90),
-    lng: z.coerce.number().min(-180).max(180),
     size: z.string().min(3, "Invalid size"),
     availability: z.coerce.number().int().min(0, "Availability cannot be negative."),
     images: z.array(z.string().url("Invalid URL format.")).min(1, "At least one image is required."),
@@ -93,8 +91,6 @@ export function BillboardsTable() {
       form.reset({
         name: billboard.name,
         location: billboard.location,
-        lat: billboard.lat,
-        lng: billboard.lng,
         size: billboard.size,
         availability: billboard.availability,
         images: billboard.images,
@@ -103,8 +99,6 @@ export function BillboardsTable() {
       form.reset({
         name: "",
         location: "",
-        lat: 0,
-        lng: 0,
         size: "",
         availability: 1,
         images: [],
@@ -223,10 +217,6 @@ export function BillboardsTable() {
                 <div className="flex-grow py-6 pr-6 space-y-4 overflow-y-auto">
                 <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Name</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
                 <FormField control={form.control} name="location" render={({ field }) => ( <FormItem> <FormLabel>Location</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
-                <div className="grid grid-cols-2 gap-4">
-                    <FormField control={form.control} name="lat" render={({ field }) => ( <FormItem> <FormLabel>Latitude</FormLabel> <FormControl><Input type="number" step="any" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
-                    <FormField control={form.control} name="lng" render={({ field }) => ( <FormItem> <FormLabel>Longitude</FormLabel> <FormControl><Input type="number" step="any" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
-                </div>
                 <FormField control={form.control} name="size" render={({ field }) => ( <FormItem> <FormLabel>Size</FormLabel> <FormControl><Input placeholder="e.g., 14' x 48'" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
                 <FormField control={form.control} name="availability" render={({ field }) => ( <FormItem> <FormLabel>Availability (pcs)</FormLabel> <FormControl><Input type="number" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
                 

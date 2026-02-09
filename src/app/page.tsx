@@ -8,7 +8,6 @@ import type { Billboard } from '@/lib/types';
 import Link from 'next/link';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
-import { MapView } from '@/components/billboards/map-view';
 import placeholderImages from '@/lib/placeholder-images.json';
 import { useBillboards } from '@/context/billboard-context';
 
@@ -96,20 +95,6 @@ export default function Home() {
                 <BillboardCard key={billboard.id} billboard={billboard} />
               ))}
             </div>
-          </div>
-        </section>
-
-        {/* Interactive Map */}
-        <section id="map" className="py-20 bg-primary/5">
-          <div className="container mx-auto px-4">
-            <h2 className="font-headline text-3xl md:text-4xl font-bold text-center mb-12">
-              Find Your Perfect Spot
-            </h2>
-            <Card className="overflow-hidden shadow-2xl">
-              <div className="h-[500px] md:h-[600px] w-full">
-                <MapView billboards={billboards} />
-              </div>
-            </Card>
           </div>
         </section>
       </main>
