@@ -43,6 +43,7 @@ import {
 import { toast } from "@/hooks/use-toast"
 import type { Billboard } from "@/lib/types"
 import placeholderImages from "@/lib/placeholder-images.json"
+import { useBillboards } from "@/context/billboard-context"
 
 const editFormSchema = z.object({
   name: z.string().min(2, "Name is too short"),
@@ -54,8 +55,8 @@ const editFormSchema = z.object({
 
 type EditFormValues = z.infer<typeof editFormSchema>
 
-export function BillboardsTable({ initialData }: { initialData: Billboard[] }) {
-  const [billboards, setBillboards] = React.useState<Billboard[]>(initialData)
+export function BillboardsTable() {
+  const { billboards, setBillboards } = useBillboards()
   const [editingBillboard, setEditingBillboard] = React.useState<Billboard | null>(null)
   const [imagePreview, setImagePreview] = React.useState<string | null>(null)
 
@@ -98,7 +99,7 @@ export function BillboardsTable({ initialData }: { initialData: Billboard[] }) {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      form.setValue("imageId", undefined, { shouldValidate: true });
+      form.setValue("imageId", "", { shouldValidate: true });
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -115,7 +116,7 @@ export function BillboardsTable({ initialData }: { initialData: Billboard[] }) {
       ? { 
           ...b, 
           ...values,
-          imageId: values.imageId || b.imageId,
+          imageId: values.imageId || "",
           imageUrl: imagePreview || b.imageUrl,
         } 
       : b

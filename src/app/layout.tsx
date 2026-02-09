@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "@/components/theme-provider";
+import { BillboardProvider } from '@/context/billboard-context';
 
 export const metadata: Metadata = {
   title: "Cox's Ad",
@@ -28,8 +29,10 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
-          <Toaster />
+          <BillboardProvider>
+            {children}
+            <Toaster />
+          </BillboardProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -1,14 +1,16 @@
+"use client";
+
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Map, Pin, Users, Eye } from 'lucide-react';
-import { getBillboards } from '@/lib/data';
+import { Map, Users, Eye } from 'lucide-react';
 import type { Billboard } from '@/lib/types';
 import Link from 'next/link';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { MapView } from '@/components/billboards/map-view';
 import placeholderImages from '@/lib/placeholder-images.json';
+import { useBillboards } from '@/context/billboard-context';
 
 function BillboardCard({ billboard }: { billboard: Billboard }) {
   const placeholderImage = placeholderImages.placeholderImages.find(img => img.id === billboard.imageId);
@@ -55,7 +57,7 @@ function BillboardCard({ billboard }: { billboard: Billboard }) {
 }
 
 export default function Home() {
-  const billboards = getBillboards();
+  const { billboards } = useBillboards();
 
   return (
     <>
