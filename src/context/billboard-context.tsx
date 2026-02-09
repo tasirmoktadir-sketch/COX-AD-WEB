@@ -1,10 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { collection, doc, writeBatch } from 'firebase/firestore';
+import { collection } from 'firebase/firestore';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import type { Billboard } from '@/lib/types';
-import { getBillboards as getInitialBillboards } from '@/lib/data';
 import { Loader2 } from 'lucide-react';
 
 type BillboardContextType = {
@@ -18,37 +17,15 @@ export function BillboardProvider({ children }: { children: React.ReactNode }) {
   const firestore = useFirestore();
   
   const billboardsCollectionRef = useMemoFirebase(() => collection(firestore, 'billboards'), [firestore]);
-  const { data: billboards, isLoading: isLoadingBillboards, error } = useCollection<Billboard>(billboardsCollectionRef);
-
-  const [isSeeding, setIsSeeding] = React.useState(false);
-
-  React.useEffect(() => {
-    if (firestore && billboards && billboards.length === 0 && !isLoadingBillboards && !isSeeding) {
-      const seedData = async () => {
-        setIsSeeding(true);
-        console.log("No billboards found. Seeding initial data...");
-        const initialBillboards = getInitialBillboards();
-        const batch = writeBatch(firestore);
-        initialBillboards.forEach((billboard) => {
-          const { id, ...data } = billboard;
-          const docRef = doc(firestore, 'billboards', id);
-          batch.set(docRef, data);
-        });
-        await batch.commit();
-        console.log("Seeding complete.");
-        setIsSeeding(false);
-      };
-      seedData();
-    }
-  }, [billboards, isLoadingBillboards, firestore, isSeeding]);
+  const { data: billboards, isLoading, error } = useCollection<Billboard>(billboardsCollectionRef);
 
   if (error) {
+    // It's good practice to log the error or display an error message
     console.error("Error fetching billboards:", error);
-    // You could render an error state here
   }
 
-  const isLoading = isLoadingBillboards || isSeeding;
-
+  // The provider will now show a loader only while the initial data is being fetched.
+  // Once fetched, it will render the children with the billboard data (or an empty array).
   return (
     <BillboardContext.Provider value={{ billboards: billboards || [], isLoading }}>
       {isLoading ? (
