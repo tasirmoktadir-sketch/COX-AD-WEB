@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata: Metadata = {
-  title: 'AdView',
+  title: "Cox's Ad",
   description: 'Offline advertising company specializing in high-impact billboard campaigns.',
 };
 
