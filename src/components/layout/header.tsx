@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu, Clapperboard } from "lucide-react"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 const navLinks = [
   { href: "/", label: "Billboards" },
@@ -42,11 +43,13 @@ export function Header() {
           <span className="font-headline text-xl font-bold text-primary">AdView</span>
         </Link>
 
-        <div className="hidden md:flex items-center space-x-4">
+        <div className="hidden md:flex items-center space-x-2">
           <NavLinks />
+          <ThemeToggle />
         </div>
 
-        <div className="md:hidden">
+        <div className="flex items-center md:hidden">
+          <ThemeToggle />
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon">
