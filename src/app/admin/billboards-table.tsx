@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -32,14 +33,23 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { toast } from "@/hooks/use-toast"
 import type { Billboard } from "@/lib/types"
+import placeholderImages from "@/lib/placeholder-images.json"
 
 const editFormSchema = z.object({
   name: z.string().min(2, "Name is too short"),
   location: z.string().min(5, "Location is too short"),
   dimensions: z.string().min(3, "Invalid dimensions"),
   weeklyImpressions: z.coerce.number().int().positive("Must be a positive number"),
+  imageId: z.string({ required_error: "Please select an image." }),
 })
 
 type EditFormValues = z.infer<typeof editFormSchema>
@@ -55,8 +65,12 @@ export function BillboardsTable({ initialData }: { initialData: Billboard[] }) {
       location: "",
       dimensions: "",
       weeklyImpressions: 0,
+      imageId: "",
     },
   })
+
+  const selectedImageId = form.watch("imageId")
+  const selectedImage = placeholderImages.placeholderImages.find(img => img.id === selectedImageId)
 
   const handleEditClick = (billboard: Billboard) => {
     setEditingBillboard(billboard)
@@ -65,6 +79,7 @@ export function BillboardsTable({ initialData }: { initialData: Billboard[] }) {
       location: billboard.location,
       dimensions: billboard.dimensions,
       weeklyImpressions: billboard.weeklyImpressions,
+      imageId: billboard.imageId,
     })
   }
 
@@ -131,7 +146,7 @@ export function BillboardsTable({ initialData }: { initialData: Billboard[] }) {
                       Make changes to the "{editingBillboard.name}" listing.
                     </SheetDescription>
                   </SheetHeader>
-                  <div className="flex-grow py-6 space-y-4">
+                  <div className="flex-grow py-6 pr-6 space-y-4 overflow-y-auto">
                     <FormField
                       control={form.control}
                       name="name"
@@ -184,8 +199,42 @@ export function BillboardsTable({ initialData }: { initialData: Billboard[] }) {
                         </FormItem>
                       )}
                     />
+                    <FormField
+                      control={form.control}
+                      name="imageId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Billboard Image</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select an image" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {placeholderImages.placeholderImages.map((image) => (
+                                <SelectItem key={image.id} value={image.id}>
+                                  {image.description}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    {selectedImage && (
+                        <div className="rounded-md overflow-hidden border aspect-video relative bg-muted">
+                            <Image 
+                                src={selectedImage.imageUrl}
+                                alt={selectedImage.description}
+                                fill
+                                className="object-cover"
+                            />
+                        </div>
+                    )}
                   </div>
-                  <SheetFooter>
+                  <SheetFooter className="pt-6">
                     <SheetClose asChild>
                       <Button type="button" variant="ghost">Cancel</Button>
                     </SheetClose>
