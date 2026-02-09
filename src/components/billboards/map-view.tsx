@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
-import { Billboard } from 'lucide-react';
+import { Clapperboard } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import type { Billboard as BillboardType } from '@/lib/types';
 
@@ -38,7 +38,7 @@ export function MapView({ billboards }: { billboards: BillboardType[] }) {
             position={{ lat: billboard.lat, lng: billboard.lng }}
             title={billboard.name}
           >
-            <Billboard className="w-8 h-8 text-primary drop-shadow-lg" />
+            <Clapperboard className="w-8 h-8 text-primary drop-shadow-lg" />
           </AdvancedMarker>
         ))}
       </Map>

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu, Billboard } from "lucide-react"
+import { Menu, Clapperboard } from "lucide-react"
 
 const navLinks = [
   { href: "/", label: "Billboards" },
@@ -38,7 +38,7 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2">
-          <Billboard className="h-6 w-6 text-primary" />
+          <Clapperboard className="h-6 w-6 text-primary" />
           <span className="font-headline text-xl font-bold text-primary">AdView</span>
         </Link>
 
