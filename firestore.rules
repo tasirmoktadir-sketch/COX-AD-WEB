@@ -52,12 +52,12 @@ service cloud.firestore {
     /**
      * /roles_admin/{adminId}
      * This collection is the source of truth for admin privileges.
-     * - `read`: Allows a user to read their own document to check their admin status. This is crucial for the app's auth flow.
+     * - `get`: Allows an authenticated user to read their OWN admin role document. This is critical for the app's auth flow.
      * - `list`, `write`: Allows an existing admin to manage other admin roles (view list, add, remove).
      */
     match /roles_admin/{adminId} {
-      // TEMPORARY DEBUGGING RULE: Allow any signed-in user to read.
-      allow read: if isSignedIn();
+      allow get: if isSignedIn() && request.auth.uid == adminId;
+      allow list: if isAdmin();
       allow write: if isAdmin();
     }
 
