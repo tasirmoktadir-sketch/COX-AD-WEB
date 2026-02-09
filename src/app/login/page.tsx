@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -29,7 +29,7 @@ const formSchema = z.object({
 
 export default function LoginPage() {
   const auth = useAuth();
-  const { user, isUserLoading } = useUser();
+  const { isUserLoading } = useUser();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -41,11 +41,8 @@ export default function LoginPage() {
     },
   });
 
-  useEffect(() => {
-    if (!isUserLoading && user) {
-      router.push('/admin');
-    }
-  }, [user, isUserLoading, router]);
+  // Note: The problematic useEffect that caused a redirect loop has been removed.
+  // Redirection now happens explicitly after a successful login attempt.
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
@@ -55,6 +52,9 @@ export default function LoginPage() {
           title: 'Sign-in successful!',
           description: 'You will be redirected to the admin dashboard shortly.',
         });
+        // Redirect to admin page after successful login.
+        // The AdminLayout will then verify if the user is an actual admin.
+        router.push('/admin');
       })
       .catch((error: any) => {
         console.error(error);
@@ -75,7 +75,9 @@ export default function LoginPage() {
       });
   }
 
-  if (isUserLoading || user) {
+  // The loading state should only depend on the initial auth check, not on whether a user is present.
+  // This prevents the page from getting stuck in a loading state for already-logged-in users.
+  if (isUserLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <Loader2 className="h-16 w-16 animate-spin" />
