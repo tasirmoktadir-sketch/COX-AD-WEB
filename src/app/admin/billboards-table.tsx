@@ -143,7 +143,6 @@ export function BillboardsTable() {
     const billboardRef = doc(firestore, 'billboards', deletingBillboard.id);
     deleteDocumentNonBlocking(billboardRef);
     toast({ variant: "destructive", title: "Billboard Deleted", description: `"${deletingBillboard.name}" has been deleted.` });
-    setDeletingBillboard(null);
   }
 
   return (
