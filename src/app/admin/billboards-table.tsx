@@ -5,6 +5,7 @@ import Image from "next/image"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
+import { doc } from "firebase/firestore"
 import {
   Table,
   TableBody,
@@ -44,6 +45,7 @@ import { toast } from "@/hooks/use-toast"
 import type { Billboard } from "@/lib/types"
 import placeholderImages from "@/lib/placeholder-images.json"
 import { useBillboards } from "@/context/billboard-context"
+import { useFirestore, setDocumentNonBlocking } from "@/firebase"
 
 const editFormSchema = z.object({
   name: z.string().min(2, "Name is too short"),
@@ -56,19 +58,13 @@ const editFormSchema = z.object({
 type EditFormValues = z.infer<typeof editFormSchema>
 
 export function BillboardsTable() {
-  const { billboards, setBillboards } = useBillboards()
+  const { billboards } = useBillboards() // now from Firestore via context
+  const firestore = useFirestore()
   const [editingBillboard, setEditingBillboard] = React.useState<Billboard | null>(null)
   const [imagePreview, setImagePreview] = React.useState<string | null>(null)
 
   const form = useForm<EditFormValues>({
     resolver: zodResolver(editFormSchema),
-    defaultValues: {
-      name: "",
-      location: "",
-      dimensions: "",
-      weeklyImpressions: 0,
-      imageId: "",
-    },
   })
 
   const selectedImageId = form.watch("imageId")
@@ -81,7 +77,6 @@ export function BillboardsTable() {
       }
     }
   }, [selectedImageId])
-
 
   const handleEditClick = (billboard: Billboard) => {
     setEditingBillboard(billboard)
@@ -110,22 +105,20 @@ export function BillboardsTable() {
 
   const onSubmit = (values: EditFormValues) => {
     if (!editingBillboard) return;
+
+    const billboardRef = doc(firestore, 'billboards', editingBillboard.id);
     
-    const updatedBillboards = billboards.map((b) =>
-      b.id === editingBillboard.id 
-      ? { 
-          ...b, 
-          ...values,
-          imageId: values.imageId || "",
-          imageUrl: imagePreview || b.imageUrl,
-        } 
-      : b
-    )
-    setBillboards(updatedBillboards)
+    const dataToUpdate: Partial<Billboard> = {
+      ...values,
+      imageId: values.imageId || "",
+      imageUrl: imagePreview || editingBillboard.imageUrl,
+    }
     
+    setDocumentNonBlocking(billboardRef, dataToUpdate, { merge: true });
+
     toast({
       title: "Billboard Updated",
-      description: `Successfully updated "${values.name}".`,
+      description: `Successfully updated "${values.name}". The changes are saved to the database.`,
     })
     
     setEditingBillboard(null)
@@ -157,7 +150,7 @@ export function BillboardsTable() {
                 </TableRow>
                 </TableHeader>
                 <TableBody>
-                {billboards.map((billboard) => (
+                {billboards && billboards.map((billboard) => (
                     <TableRow key={billboard.id}>
                     <TableCell className="font-medium">{billboard.name}</TableCell>
                     <TableCell className="hidden md:table-cell">{billboard.location}</TableCell>

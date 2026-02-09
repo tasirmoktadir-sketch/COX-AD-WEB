@@ -32,34 +32,48 @@
       "type": "object",
       "description": "Represents a billboard advertisement location.",
       "properties": {
-        "id": {
+        "name": {
           "type": "string",
-          "description": "Unique identifier for the Billboard entity."
+          "description": "Name of the billboard."
         },
-        "locationName": {
+        "location": {
           "type": "string",
-          "description": "Name of the location where the billboard is situated."
+          "description": "Address of the billboard."
         },
-        "imageUrl": {
-          "type": "string",
-          "description": "URL of the image displayed on the billboard.",
-          "format": "uri"
+        "lat": {
+          "type": "number",
+          "description": "Latitude of the billboard location."
         },
-        "dimension": {
+        "lng": {
+          "type": "number",
+          "description": "Longitude of the billboard location."
+        },
+        "dimensions": {
           "type": "string",
           "description": "Dimensions of the billboard (e.g., 10ft x 20ft)."
         },
-        "estimatedReach": {
+        "weeklyImpressions": {
           "type": "number",
-          "description": "Estimated number of people who view the billboard daily."
+          "description": "Estimated number of people who view the billboard weekly."
+        },
+        "imageId": {
+          "type": "string",
+          "description": "ID for the placeholder image."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL for a custom uploaded image.",
+          "format": "uri"
         }
       },
       "required": [
-        "id",
-        "locationName",
-        "imageUrl",
-        "dimension",
-        "estimatedReach"
+        "name",
+        "location",
+        "lat",
+        "lng",
+        "dimensions",
+        "weeklyImpressions",
+        "imageId"
       ]
     }
   },

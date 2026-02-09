@@ -1,24 +1,38 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu, Blocks } from "lucide-react"
+import { Menu, Blocks, LogOut } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { useUser, useAuth } from "@/firebase"
+import { signOut } from 'firebase/auth';
 
-const navLinks = [
+const baseNavLinks = [
   { href: "/", label: "Billboards" },
   { href: "/ai-suggester", label: "AI Suggester" },
   { href: "/contact", label: "Contact" },
-  { href: "/admin", label: "Admin" },
 ]
 
 export function Header() {
   const pathname = usePathname()
+  const { user, isUserLoading } = useUser()
+  const auth = useAuth();
+  const router = useRouter();
 
-  const NavLinks = ({ className }: { className?: string }) => (
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/');
+  };
+
+  const navLinks = [...baseNavLinks];
+  if (user) {
+    navLinks.push({ href: "/admin", label: "Admin" });
+  }
+
+  const NavLinksComponent = ({ className }: { className?: string }) => (
     <nav className={cn("flex items-center space-x-4 lg:space-x-6", className)}>
       {navLinks.map(({ href, label }) => (
         <Link
@@ -43,9 +57,20 @@ export function Header() {
           <span className="font-headline text-xl font-bold text-primary">Cox's Ad</span>
         </Link>
 
-        <div className="hidden md:flex items-center space-x-2">
-          <NavLinks />
+        <div className="hidden md:flex items-center space-x-4">
+          <NavLinksComponent />
           <ThemeToggle />
+          {!isUserLoading && (
+            user ? (
+              <Button variant="ghost" size="icon" onClick={handleLogout} title="Logout">
+                <LogOut className="h-5 w-5" />
+              </Button>
+            ) : (
+              <Button asChild>
+                <Link href="/login">Login</Link>
+              </Button>
+            )
+          )}
         </div>
 
         <div className="flex items-center md:hidden">
@@ -59,7 +84,20 @@ export function Header() {
             </SheetTrigger>
             <SheetContent side="right">
               <div className="flex flex-col space-y-4 pt-8">
-                <NavLinks className="flex-col space-y-4 space-x-0" />
+                <NavLinksComponent className="flex-col !space-x-0 space-y-2" />
+                <div className="pt-4">
+                  {!isUserLoading && (
+                    user ? (
+                      <Button onClick={handleLogout} className="w-full">
+                        <LogOut className="mr-2 h-4 w-4" /> Logout
+                      </Button>
+                    ) : (
+                      <Button asChild className="w-full">
+                        <Link href="/login">Login</Link>
+                      </Button>
+                    )
+                  )}
+                </div>
               </div>
             </SheetContent>
           </Sheet>
