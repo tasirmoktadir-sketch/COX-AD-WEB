@@ -47,30 +47,32 @@ export default function LoginPage() {
     }
   }, [user, isUserLoading, router]);
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
-    try {
-      await initiateEmailSignIn(auth, values.email, values.password);
-      // The auth state change will be caught by the useUser hook and trigger redirection
-      toast({
-        title: 'Sign-in successful!',
-        description: 'You will be redirected to the admin dashboard shortly.',
+    initiateEmailSignIn(auth, values.email, values.password)
+      .then(() => {
+        toast({
+          title: 'Sign-in successful!',
+          description: 'You will be redirected to the admin dashboard shortly.',
+        });
+      })
+      .catch((error: any) => {
+        console.error(error);
+        let description = 'An unknown error occurred.';
+        if (error.code === 'auth/invalid-credential') {
+            description = 'The email or password you entered is incorrect. Please try again.';
+        } else {
+            description = error.message;
+        }
+        toast({
+          variant: 'destructive',
+          title: 'Sign-in failed',
+          description: description,
+        });
+      })
+      .finally(() => {
+        setIsSubmitting(false);
       });
-    } catch (error: any) {
-      console.error(error);
-      let description = 'An unknown error occurred.';
-      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-          description = 'The email or password you entered is incorrect. Please try again.';
-      } else {
-          description = error.message;
-      }
-      toast({
-        variant: 'destructive',
-        title: 'Sign-in failed',
-        description: description,
-      });
-      setIsSubmitting(false);
-    }
   }
 
   if (isUserLoading || user) {
