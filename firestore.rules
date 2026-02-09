@@ -57,8 +57,7 @@ service cloud.firestore {
      * @principle   Public read with authenticated writes.
      */
     match /billboards/{billboardId} {
-      allow get, list: if true;
-      allow write: if isSignedIn();
+      allow read, write: if true;
     }
 
     /**
