@@ -63,8 +63,8 @@ const billboardFormSchema = z.object({
     location: z.string().min(5, "Location is too short"),
     lat: z.coerce.number().min(-90).max(90),
     lng: z.coerce.number().min(-180).max(180),
-    dimensions: z.string().min(3, "Invalid dimensions"),
-    weeklyImpressions: z.coerce.number().int().positive("Must be a positive number"),
+    size: z.string().min(3, "Invalid size"),
+    availability: z.coerce.number().int().min(0, "Availability cannot be negative."),
     images: z.array(z.string().url("Invalid URL format.")).min(1, "At least one image is required."),
   })
 
@@ -79,7 +79,7 @@ export function BillboardsTable() {
 
   const form = useForm<BillboardFormValues>({
     resolver: zodResolver(billboardFormSchema),
-    defaultValues: { images: [] }
+    defaultValues: { images: [], availability: 1 }
   })
   
   const { fields, append, remove } = useFieldArray({
@@ -95,8 +95,8 @@ export function BillboardsTable() {
         location: billboard.location,
         lat: billboard.lat,
         lng: billboard.lng,
-        dimensions: billboard.dimensions,
-        weeklyImpressions: billboard.weeklyImpressions,
+        size: billboard.size,
+        availability: billboard.availability,
         images: billboard.images,
       })
     } else {
@@ -105,8 +105,8 @@ export function BillboardsTable() {
         location: "",
         lat: 0,
         lng: 0,
-        dimensions: "",
-        weeklyImpressions: 0,
+        size: "",
+        availability: 1,
         images: [],
       })
     }
@@ -171,7 +171,7 @@ export function BillboardsTable() {
                 <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead className="hidden md:table-cell">Location</TableHead>
-                    <TableHead className="hidden sm:table-cell">Weekly Impressions</TableHead>
+                    <TableHead className="hidden sm:table-cell">Availability (pcs)</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
                 </TableHeader>
@@ -180,7 +180,7 @@ export function BillboardsTable() {
                     <TableRow key={billboard.id}>
                     <TableCell className="font-medium">{billboard.name}</TableCell>
                     <TableCell className="hidden md:table-cell">{billboard.location}</TableCell>
-                    <TableCell className="hidden sm:table-cell">{billboard.weeklyImpressions.toLocaleString()}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{billboard.availability}</TableCell>
                     <TableCell className="text-right">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -227,8 +227,8 @@ export function BillboardsTable() {
                     <FormField control={form.control} name="lat" render={({ field }) => ( <FormItem> <FormLabel>Latitude</FormLabel> <FormControl><Input type="number" step="any" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
                     <FormField control={form.control} name="lng" render={({ field }) => ( <FormItem> <FormLabel>Longitude</FormLabel> <FormControl><Input type="number" step="any" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
                 </div>
-                <FormField control={form.control} name="dimensions" render={({ field }) => ( <FormItem> <FormLabel>Dimensions</FormLabel> <FormControl><Input placeholder="e.g., 14' x 48'" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
-                <FormField control={form.control} name="weeklyImpressions" render={({ field }) => ( <FormItem> <FormLabel>Weekly Impressions</FormLabel> <FormControl><Input type="number" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                <FormField control={form.control} name="size" render={({ field }) => ( <FormItem> <FormLabel>Size</FormLabel> <FormControl><Input placeholder="e.g., 14' x 48'" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                <FormField control={form.control} name="availability" render={({ field }) => ( <FormItem> <FormLabel>Availability (pcs)</FormLabel> <FormControl><Input type="number" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
                 
                 <FormItem>
                     <FormLabel>Images</FormLabel>

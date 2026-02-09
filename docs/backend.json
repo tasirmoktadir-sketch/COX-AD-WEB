@@ -48,13 +48,13 @@
           "type": "number",
           "description": "Longitude of the billboard location."
         },
-        "dimensions": {
+        "size": {
           "type": "string",
-          "description": "Dimensions of the billboard (e.g., 10ft x 20ft)."
+          "description": "Size of the billboard (e.g., 10ft x 20ft)."
         },
-        "weeklyImpressions": {
+        "availability": {
           "type": "number",
-          "description": "Estimated number of people who view the billboard weekly."
+          "description": "Number of available units (pieces)."
         },
         "images": {
           "type": "array",
@@ -70,8 +70,8 @@
         "location",
         "lat",
         "lng",
-        "dimensions",
-        "weeklyImpressions",
+        "size",
+        "availability",
         "images"
       ]
     },

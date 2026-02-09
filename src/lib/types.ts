@@ -4,7 +4,7 @@ export type Billboard = {
   location: string;
   lat: number;
   lng: number;
-  dimensions: string;
-  weeklyImpressions: number;
+  size: string;
+  availability: number;
   images: string[];
 };

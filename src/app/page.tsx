@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Map, Users, Eye } from 'lucide-react';
+import { Map, Maximize, Package } from 'lucide-react';
 import type { Billboard } from '@/lib/types';
 import Link from 'next/link';
 import { Header } from '@/components/layout/header';
@@ -40,12 +40,12 @@ function BillboardCard({ billboard }: { billboard: Billboard }) {
           {billboard.location}
         </p>
         <p className="flex items-center text-muted-foreground">
-          <Eye className="mr-2 h-4 w-4 text-primary" />
-          {billboard.weeklyImpressions.toLocaleString()} weekly impressions
+          <Maximize className="mr-2 h-4 w-4 text-primary" />
+          Size: {billboard.size}
         </p>
         <p className="flex items-center text-muted-foreground">
-          <Users className="mr-2 h-4 w-4 text-primary" />
-          Dimensions: {billboard.dimensions}
+          <Package className="mr-2 h-4 w-4 text-primary" />
+          {billboard.availability > 0 ? `${billboard.availability} ${billboard.availability > 1 ? 'units available' : 'unit available'}` : 'Unavailable'}
         </p>
       </CardContent>
       <CardFooter>
