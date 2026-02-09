@@ -3,7 +3,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { collection, serverTimestamp } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -21,7 +20,6 @@ import { toast } from "@/hooks/use-toast";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { useFirestore, addDocumentNonBlocking } from "@/firebase";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -37,7 +35,6 @@ const formSchema = z.object({
 });
 
 export default function ContactPage() {
-  const firestore = useFirestore();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -48,20 +45,39 @@ export default function ContactPage() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    const inquiriesCollection = collection(firestore, 'inquiries');
-    
-    addDocumentNonBlocking(inquiriesCollection, {
-      ...values,
-      submittedAt: serverTimestamp(),
-      read: false
-    });
-
-    toast({
-      title: "Inquiry Sent!",
-      description: "Thank you for your message. We'll be in touch shortly.",
-    });
-    form.reset();
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    try {
+      const response = await fetch("https://formspree.io/f/xaqdnodv", {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(values)
+      });
+      
+      if (response.ok) {
+        toast({
+          title: "Inquiry Sent!",
+          description: "Thank you for your message. We'll be in touch shortly.",
+        });
+        form.reset();
+      } else {
+        const data = await response.json();
+        const errorMessage = data.errors ? data.errors.map((e:any) => e.message).join(", ") : "An unexpected error occurred.";
+        toast({
+          variant: "destructive",
+          title: "Submission Failed",
+          description: errorMessage,
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Network Error",
+        description: "Could not send message. Please check your connection and try again.",
+      });
+    }
   }
 
   return (
