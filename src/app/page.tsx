@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from 'next/image';
@@ -71,8 +72,29 @@ function BillboardCard({ billboard }: { billboard: Billboard }) {
   );
 }
 
+function BillboardCardSkeleton() {
+  return (
+    <Card className="flex flex-col overflow-hidden">
+      <CardHeader className="p-0">
+        <Skeleton className="aspect-[4/3] w-full" />
+        <div className="p-6 pb-2">
+            <Skeleton className="h-6 w-3/4" />
+        </div>
+      </CardHeader>
+      <CardContent className="flex-grow space-y-4">
+        <Skeleton className="h-5 w-full" />
+        <Skeleton className="h-5 w-5/6" />
+        <Skeleton className="h-5 w-4/5" />
+      </CardContent>
+      <CardFooter>
+        <Skeleton className="h-10 w-full" />
+      </CardFooter>
+    </Card>
+  )
+}
+
 export default function Home() {
-  const { billboards } = useBillboards();
+  const { billboards, isLoading: areBillboardsLoading } = useBillboards();
   const activeBillboards = billboards.filter(b => !b.isPaused);
   
   const firestore = useFirestore();
@@ -114,9 +136,17 @@ export default function Home() {
               Our Prime Locations
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {activeBillboards.map((billboard) => (
-                <BillboardCard key={billboard.id} billboard={billboard} />
-              ))}
+              {areBillboardsLoading ? (
+                <>
+                  <BillboardCardSkeleton />
+                  <BillboardCardSkeleton />
+                  <BillboardCardSkeleton />
+                </>
+              ) : (
+                activeBillboards.map((billboard) => (
+                  <BillboardCard key={billboard.id} billboard={billboard} />
+                ))
+              )}
             </div>
           </div>
         </section>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -24,17 +25,11 @@ export function BillboardProvider({ children }: { children: React.ReactNode }) {
     console.error("Error fetching billboards:", error);
   }
 
-  // The provider will now show a loader only while the initial data is being fetched.
-  // Once fetched, it will render the children with the billboard data (or an empty array).
+  // Always render children. Components that need to can use the isLoading flag
+  // to show their own loading states, preventing the whole app from unmounting.
   return (
     <BillboardContext.Provider value={{ billboards: billboards || [], isLoading }}>
-      {isLoading ? (
-        <div className="flex h-screen w-full items-center justify-center">
-          <Loader2 className="h-16 w-16 animate-spin" />
-        </div>
-      ) : (
-        children
-      )}
+      {children}
     </BillboardContext.Provider>
   );
 }
