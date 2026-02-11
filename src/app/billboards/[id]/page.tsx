@@ -77,12 +77,12 @@ export default function BillboardDetailPage() {
                     {(billboard.images && billboard.images.length > 0) ? (
                         billboard.images.map((url, index) => (
                             <CarouselItem key={index}>
-                                <div className="aspect-video relative rounded-lg overflow-hidden bg-muted group">
+                                <div className="aspect-video relative rounded-lg overflow-hidden bg-muted">
                                     <Image 
                                         src={url} 
                                         alt={`${billboard.name} - Image ${index + 1}`} 
                                         fill 
-                                        className="object-cover transition-transform duration-300 group-hover:scale-105" 
+                                        className="object-contain" 
                                     />
                                 </div>
                             </CarouselItem>
