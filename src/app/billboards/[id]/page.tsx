@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/carousel';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowLeft, Map, Maximize, Package, Compass, Layers } from 'lucide-react';
+import { Loader2, ArrowLeft, Map, Maximize, Package, Compass, Layers, ArrowRight } from 'lucide-react';
 import type { Billboard } from '@/lib/types';
 
 export default function BillboardDetailPage() {
@@ -40,6 +40,16 @@ export default function BillboardDetailPage() {
       }
     }
   }, [id, billboards, areBillboardsLoading, router]);
+
+  // Navigation logic
+  const currentIndex = billboards.findIndex(b => b.id === id);
+  const nextBillboard = currentIndex !== -1 && billboards.length > 1
+    ? billboards[(currentIndex + 1) % billboards.length]
+    : null;
+  const prevBillboard = currentIndex !== -1 && billboards.length > 1
+    ? billboards[(currentIndex - 1 + billboards.length) % billboards.length]
+    : null;
+
 
   if (areBillboardsLoading || !billboard) {
     return (
@@ -64,12 +74,34 @@ export default function BillboardDetailPage() {
       <Header />
       <main className="flex-grow bg-background">
         <div className="container mx-auto px-4 py-10">
-          <Button variant="ghost" onClick={() => router.back()} className="mb-6">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Listings
-          </Button>
+          {/* Navigation Bar */}
+          <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
+            <Button variant="ghost" onClick={() => router.back()}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Listings
+            </Button>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 lg:gap-12">
+            <div className="flex items-center gap-2">
+              {prevBillboard && (
+                <Button asChild variant="outline">
+                  <Link href={`/billboards/${prevBillboard.id}`}>
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Previous
+                  </Link>
+                </Button>
+              )}
+              {nextBillboard && (
+                <Button asChild variant="outline">
+                  <Link href={`/billboards/${nextBillboard.id}`}>
+                    Next
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12">
             {/* Image Carousel */}
             <div className="lg:col-span-3">
                <Carousel className="w-full" opts={{ loop: true }}>
@@ -105,7 +137,7 @@ export default function BillboardDetailPage() {
             </div>
 
             {/* Details Section */}
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-2">
                 <Card className="h-full shadow-lg">
                     <CardContent className="p-6 flex flex-col h-full">
                         <h1 className="font-headline text-3xl md:text-4xl font-bold text-primary mb-4">{billboard.name}</h1>
