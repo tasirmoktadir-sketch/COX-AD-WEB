@@ -132,21 +132,66 @@ export function BillboardsTable() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files) return;
-  
-    const readPromises = Array.from(files).map(file => {
-      return new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+
+    const resizeImage = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = document.createElement('img');
+                img.src = event.target?.result as string;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 1920;
+                    const MAX_HEIGHT = 1080;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        return reject(new Error('Could not get canvas context'));
+                    }
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    resolve(dataUrl);
+                };
+                img.onerror = reject;
+            };
+            reader.onerror = reject;
+        });
+    };
+
+    const resizePromises = Array.from(files).map(file => resizeImage(file).catch(error => {
+        console.error("Image resizing failed for a file:", error);
+        toast({
+            variant: "destructive",
+            title: "Image Processing Failed",
+            description: "Could not process one of your images. It may be corrupted.",
+        });
+        return null;
+    }));
+
+    Promise.all(resizePromises).then(newImageUrls => {
+        const validUrls = newImageUrls.filter((url): url is string => url !== null);
+        if (validUrls.length > 0) {
+            const currentImages = form.getValues('images') || [];
+            form.setValue('images', [...currentImages, ...validUrls], { shouldValidate: true, shouldDirty: true });
+        }
     });
-  
-    Promise.all(readPromises).then(newImageUrls => {
-      const currentImages = form.getValues('images') || [];
-      form.setValue('images', [...currentImages, ...newImageUrls], { shouldValidate: true, shouldDirty: true });
-    });
-  
+
     event.target.value = '';
   };
   
@@ -164,10 +209,18 @@ export function BillboardsTable() {
         setIsSheetOpen(false);
     } catch (error: any) {
         console.error("Failed to save billboard:", error);
+        let description = "An unknown error occurred while saving.";
+        // Check for Firestore's specific error code for oversized documents
+        if (error.code === 'invalid-argument' || (error.message && error.message.includes('bytes'))) {
+            description = "Save failed because the total data size is too large. Please reduce the number of images or use smaller images.";
+        } else {
+            description = error.message;
+        }
+
         toast({
             variant: "destructive",
             title: "Save Failed",
-            description: `An error occurred: ${error.message}. If uploading images, the file(s) might be too large.`,
+            description: description,
         });
     }
 }
@@ -433,5 +486,3 @@ export function BillboardsTable() {
     </>
   )
 }
-
-    
