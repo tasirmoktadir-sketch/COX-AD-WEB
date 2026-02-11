@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -21,15 +20,12 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, ArrowLeft, Map, Maximize, Package, Compass, Layers } from 'lucide-react';
 import type { Billboard } from '@/lib/types';
-import { ImageViewerDialog } from '@/components/billboards/image-viewer-dialog';
 
 export default function BillboardDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { billboards, isLoading: areBillboardsLoading } = useBillboards();
   const [billboard, setBillboard] = React.useState<Billboard | null>(null);
-  const [imageViewerOpen, setImageViewerOpen] = React.useState(false);
-  const [selectedImageIndex, setSelectedImageIndex] = React.useState(0);
 
   const id = params.id as string;
 
@@ -44,11 +40,6 @@ export default function BillboardDetailPage() {
       }
     }
   }, [id, billboards, areBillboardsLoading, router]);
-  
-  const handleImageClick = (index: number) => {
-    setSelectedImageIndex(index);
-    setImageViewerOpen(true);
-  };
 
   if (areBillboardsLoading || !billboard) {
     return (
@@ -78,24 +69,21 @@ export default function BillboardDetailPage() {
             Back to Listings
           </Button>
 
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
             {/* Image Carousel */}
-            <div className="lg:col-span-3">
+            <div className="lg:col-span-2">
                <Carousel className="w-full" opts={{ loop: true }}>
                     <CarouselContent>
                     {(billboard.images && billboard.images.length > 0) ? (
                         billboard.images.map((url, index) => (
-                            <CarouselItem key={index} onClick={() => handleImageClick(index)} className="cursor-pointer">
+                            <CarouselItem key={index}>
                                 <div className="aspect-video relative rounded-lg overflow-hidden bg-muted group">
                                     <Image 
                                         src={url} 
                                         alt={`${billboard.name} - Image ${index + 1}`} 
                                         fill 
-                                        className="object-contain transition-transform duration-300 group-hover:scale-105" 
+                                        className="object-cover transition-transform duration-300 group-hover:scale-105" 
                                     />
-                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                       <Maximize className="h-12 w-12 text-white" />
-                                    </div>
                                 </div>
                             </CarouselItem>
                         ))
@@ -117,7 +105,7 @@ export default function BillboardDetailPage() {
             </div>
 
             {/* Details Section */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-1">
                 <Card className="h-full shadow-lg">
                     <CardContent className="p-6 flex flex-col h-full">
                         <h1 className="font-headline text-3xl md:text-4xl font-bold text-primary mb-4">{billboard.name}</h1>
@@ -178,12 +166,6 @@ export default function BillboardDetailPage() {
         </div>
       </main>
       <Footer />
-      <ImageViewerDialog
-        images={billboard.images}
-        startIndex={selectedImageIndex}
-        isOpen={imageViewerOpen}
-        onClose={() => setImageViewerOpen(false)}
-      />
     </>
   );
 }
