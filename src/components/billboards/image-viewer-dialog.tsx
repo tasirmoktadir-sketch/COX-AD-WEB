@@ -36,14 +36,14 @@ export function ImageViewerDialog({ images, startIndex, isOpen, onClose }: Image
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-transparent border-none p-4 w-screen h-screen max-w-full max-h-screen flex items-center justify-center">
+      <DialogContent className="bg-transparent border-none p-0 w-screen h-screen max-w-full max-h-screen flex items-center justify-center">
         <DialogTitle className="sr-only">Image Viewer</DialogTitle>
         <DialogDescription className="sr-only">A carousel of larger images for the selected billboard.</DialogDescription>
         <Carousel setApi={setApi} className="w-full h-full" opts={{ loop: true, startIndex }}>
-          <CarouselContent className="h-full">
+          <CarouselContent className="h-full m-0 border-none">
             {images.map((url, index) => (
-              <CarouselItem key={index} className="flex items-center justify-center">
-                <div className="relative w-full h-full max-w-7xl max-h-[90vh]">
+              <CarouselItem key={index} className="flex items-center justify-center p-0">
+                <div className="relative w-full h-full">
                   <Image
                     src={url}
                     alt={`Full screen image ${index + 1}`}
