@@ -6,6 +6,8 @@ import Image from 'next/image';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import {
   Carousel,
@@ -35,6 +37,8 @@ export function ImageViewerDialog({ images, startIndex, isOpen, onClose }: Image
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="bg-black/90 border-none p-4 w-screen h-screen max-w-full max-h-screen flex items-center justify-center">
+        <DialogTitle className="sr-only">Image Viewer</DialogTitle>
+        <DialogDescription className="sr-only">A carousel of larger images for the selected billboard.</DialogDescription>
         <Carousel setApi={setApi} className="w-full h-full" opts={{ loop: true, startIndex }}>
           <CarouselContent className="h-full">
             {images.map((url, index) => (
