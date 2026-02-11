@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -5,8 +6,8 @@ import Image from "next/image"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { doc, collection } from "firebase/firestore"
-import { PlusCircle, MoreHorizontal, X, UploadCloud, PauseCircle, PlayCircle } from "lucide-react"
+import { doc, collection, setDoc, addDoc, deleteDoc, updateDoc } from "firebase/firestore"
+import { PlusCircle, MoreHorizontal, X, UploadCloud, PauseCircle, PlayCircle, Loader2 } from "lucide-react"
 
 import {
   Table,
@@ -57,8 +58,9 @@ import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import type { Billboard } from "@/lib/types"
 import { useBillboards } from "@/context/billboard-context"
-import { useFirestore, setDocumentNonBlocking, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase"
+import { useFirestore } from "@/firebase"
 import { cn } from "@/lib/utils"
+import { useToast } from "@/hooks/use-toast"
 
 const billboardFormSchema = z.object({
     name: z.string().min(2, "Name is too short"),
@@ -81,6 +83,7 @@ type BillboardFormValues = z.infer<typeof billboardFormSchema>
 export function BillboardsTable() {
   const { billboards } = useBillboards()
   const firestore = useFirestore()
+  const { toast } = useToast()
   const [isSheetOpen, setIsSheetOpen] = React.useState(false)
   const [editingBillboard, setEditingBillboard] = React.useState<Billboard | null>(null)
   const [deletingBillboardId, setDeletingBillboardId] = React.useState<string | null>(null);
@@ -130,7 +133,6 @@ export function BillboardsTable() {
     const files = event.target.files;
     if (!files) return;
   
-    // Create a promise for each file reader
     const readPromises = Array.from(files).map(file => {
       return new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -140,37 +142,73 @@ export function BillboardsTable() {
       });
     });
   
-    // Once all files are read, update the form state
     Promise.all(readPromises).then(newImageUrls => {
       const currentImages = form.getValues('images') || [];
       form.setValue('images', [...currentImages, ...newImageUrls], { shouldValidate: true, shouldDirty: true });
     });
   
-    // Clear the file input for the next upload
     event.target.value = '';
   };
   
-  const onSubmit = (values: BillboardFormValues) => {
-    if (editingBillboard) {
-      const billboardRef = doc(firestore, 'billboards', editingBillboard.id);
-      setDocumentNonBlocking(billboardRef, values, { merge: true });
-    } else {
-      const billboardsCollection = collection(firestore, 'billboards');
-      addDocumentNonBlocking(billboardsCollection, values);
+  async function onSubmit(values: BillboardFormValues) {
+    try {
+        if (editingBillboard) {
+            const billboardRef = doc(firestore, 'billboards', editingBillboard.id);
+            await setDoc(billboardRef, values, { merge: true });
+            toast({ title: "Success", description: "Billboard updated successfully." });
+        } else {
+            const billboardsCollection = collection(firestore, 'billboards');
+            await addDoc(billboardsCollection, values);
+            toast({ title: "Success", description: "Billboard created successfully." });
+        }
+        setIsSheetOpen(false);
+    } catch (error: any) {
+        console.error("Failed to save billboard:", error);
+        toast({
+            variant: "destructive",
+            title: "Save Failed",
+            description: `An error occurred: ${error.message}. If uploading images, the file(s) might be too large.`,
+        });
     }
-    setIsSheetOpen(false)
-  }
+}
 
-  const handleTogglePause = (billboard: Billboard) => {
+  const handleTogglePause = async (billboard: Billboard) => {
     const billboardRef = doc(firestore, 'billboards', billboard.id);
-    updateDocumentNonBlocking(billboardRef, { isPaused: !billboard.isPaused });
+    try {
+        await updateDoc(billboardRef, { isPaused: !billboard.isPaused });
+        toast({
+            title: `Billboard ${!billboard.isPaused ? 'Paused' : 'Resumed'}`,
+            description: `"${billboard.name}" has been updated.`,
+        });
+    } catch (error: any) {
+        console.error("Failed to toggle pause state:", error);
+        toast({
+            variant: "destructive",
+            title: "Update Failed",
+            description: error.message,
+        });
+    }
   }
   
-  const handleDeleteConfirmed = (event: React.MouseEvent) => {
+  const handleDeleteConfirmed = async (event: React.MouseEvent) => {
     event.preventDefault();
     if (!deletingBillboardId) return;
-    deleteDocumentNonBlocking(doc(firestore, "billboards", deletingBillboardId));
-    setDeletingBillboardId(null);
+    const billboardToDelete = billboards.find(b => b.id === deletingBillboardId);
+    try {
+        await deleteDoc(doc(firestore, "billboards", deletingBillboardId));
+        toast({
+            title: "Billboard Deleted",
+            description: `"${billboardToDelete?.name}" has been permanently deleted.`,
+        });
+        setDeletingBillboardId(null);
+    } catch (error: any) {
+        console.error("Failed to delete billboard:", error);
+        toast({
+            variant: "destructive",
+            title: "Deletion Failed",
+            description: error.message,
+        });
+    }
   };
   
   const deletingBillboard = React.useMemo(() => 
@@ -360,7 +398,11 @@ export function BillboardsTable() {
                     <Button type="button" variant="ghost">Cancel</Button>
                 </SheetClose>
                 <Button type="submit" disabled={form.formState.isSubmitting} className="transition-transform duration-300 hover:scale-105">
-                    {editingBillboard ? 'Save Changes' : 'Create Billboard'}
+                     {form.formState.isSubmitting ? (
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
+                    ) : (
+                        editingBillboard ? 'Save Changes' : 'Create Billboard'
+                    )}
                 </Button>
                 </SheetFooter>
             </form>
@@ -391,3 +433,5 @@ export function BillboardsTable() {
     </>
   )
 }
+
+    
