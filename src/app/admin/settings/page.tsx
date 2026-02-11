@@ -1,11 +1,12 @@
+
 'use client';
 
 import * as React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { useFirestore, useDoc, setDocumentNonBlocking, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -32,7 +33,6 @@ export default function AdminSettingsPage() {
   const { toast } = useToast();
   const aboutDocRef = useMemoFirebase(() => doc(firestore, 'site_content', 'about_us'), [firestore]);
   const { data: aboutData, isLoading: isDataLoading } = useDoc<AboutInfo>(aboutDocRef);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const form = useForm<AboutFormValues>({
     resolver: zodResolver(aboutFormSchema),
@@ -51,14 +51,21 @@ export default function AdminSettingsPage() {
     }
   }, [aboutData, form]);
 
-  const onSubmit = (values: AboutFormValues) => {
-    setIsSubmitting(true);
-    setDocumentNonBlocking(aboutDocRef, values, { merge: true });
-    toast({
-      title: 'Settings Saved',
-      description: 'The "About Us" information has been updated.',
-    });
-    setIsSubmitting(false);
+  const onSubmit = async (values: AboutFormValues) => {
+    try {
+        await setDoc(aboutDocRef, values, { merge: true });
+        toast({
+            title: 'Settings Saved',
+            description: 'The "About Us" information has been updated.',
+        });
+    } catch (error: any) {
+        console.error("Failed to save settings:", error);
+        toast({
+            variant: "destructive",
+            title: "Save Failed",
+            description: error.message || "Could not save settings.",
+        });
+    }
   };
 
   if (isDataLoading) {
@@ -87,8 +94,8 @@ export default function AdminSettingsPage() {
                 <FormField control={form.control} name="address" render={({ field }) => ( <FormItem> <FormLabel>Address</FormLabel> <FormControl><Textarea className="min-h-[100px]" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
                 <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem> <FormLabel>Phone Number(s)</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem> )} />
                 <FormField control={form.control} name="email" render={({ field }) => ( <FormItem> <FormLabel>Email Address</FormLabel> <FormControl><Input type="email" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? ( <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> ) : ( <><Save className="mr-2 h-4 w-4" /> Save Changes</> )}
+                <Button type="submit" disabled={form.formState.isSubmitting}>
+                  {form.formState.isSubmitting ? ( <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> ) : ( <><Save className="mr-2 h-4 w-4" /> Save Changes</> )}
                 </Button>
               </form>
             </Form>
@@ -99,3 +106,5 @@ export default function AdminSettingsPage() {
     </>
   );
 }
+
+    

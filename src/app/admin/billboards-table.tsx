@@ -6,7 +6,7 @@ import Image from "next/image"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { doc, collection } from "firebase/firestore"
+import { doc, collection, setDoc, addDoc, updateDoc, deleteDoc } from "firebase/firestore"
 import { PlusCircle, MoreHorizontal, X, UploadCloud, PauseCircle, PlayCircle, Loader2 } from "lucide-react"
 
 import {
@@ -57,7 +57,7 @@ import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import type { Billboard } from "@/lib/types"
 import { useBillboards } from "@/context/billboard-context"
-import { useFirestore, setDocumentNonBlocking, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase"
+import { useFirestore } from "@/firebase"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 
@@ -86,6 +86,7 @@ export function BillboardsTable() {
   const [isSheetOpen, setIsSheetOpen] = React.useState(false)
   const [editingBillboard, setEditingBillboard] = React.useState<Billboard | null>(null)
   const [deletingBillboardId, setDeletingBillboardId] = React.useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = React.useState(false);
 
   const form = useForm<BillboardFormValues>({
     resolver: zodResolver(billboardFormSchema),
@@ -194,41 +195,78 @@ export function BillboardsTable() {
     event.target.value = '';
   };
   
-  function onSubmit(values: BillboardFormValues) {
-    if (editingBillboard) {
-        const billboardRef = doc(firestore, 'billboards', editingBillboard.id);
-        setDocumentNonBlocking(billboardRef, values, { merge: true });
-        toast({ title: "Success", description: "Billboard updated successfully." });
-    } else {
-        const billboardsCollection = collection(firestore, 'billboards');
-        addDocumentNonBlocking(billboardsCollection, values);
-        toast({ title: "Success", description: "Billboard created successfully." });
+  async function onSubmit(values: BillboardFormValues) {
+    try {
+        if (editingBillboard) {
+            const billboardRef = doc(firestore, 'billboards', editingBillboard.id);
+            await setDoc(billboardRef, values, { merge: true });
+            toast({ title: "Success", description: "Billboard updated successfully." });
+        } else {
+            const billboardsCollection = collection(firestore, 'billboards');
+            await addDoc(billboardsCollection, values);
+            toast({ title: "Success", description: "Billboard created successfully." });
+        }
+        setIsSheetOpen(false);
+    } catch (error: any) {
+        console.error("Failed to save billboard:", error);
+        let description = "Could not save the billboard.";
+        if (error.message.includes('longer than 1048487 bytes')) {
+            description = "The total size of the images is too large. Please upload smaller images or fewer images.";
+        } else {
+            description = error.message;
+        }
+        toast({
+            variant: "destructive",
+            title: "Uh oh! Something went wrong.",
+            description: description,
+        });
     }
-    setIsSheetOpen(false);
   }
 
-  const handleTogglePause = (billboard: Billboard) => {
+  const handleTogglePause = async (billboard: Billboard) => {
     const billboardRef = doc(firestore, 'billboards', billboard.id);
-    updateDocumentNonBlocking(billboardRef, { isPaused: !billboard.isPaused });
-    toast({
-        title: `Billboard ${!billboard.isPaused ? 'Paused' : 'Resumed'}`,
-        description: `"${billboard.name}" has been updated.`,
-    });
+    const newStatus = !billboard.isPaused;
+    try {
+        await updateDoc(billboardRef, { isPaused: newStatus });
+        toast({
+            title: `Billboard ${newStatus ? 'Paused' : 'Resumed'}`,
+            description: `"${billboard.name}" has been updated.`,
+        });
+    } catch (error: any) {
+        console.error("Failed to toggle pause status:", error);
+        toast({
+            variant: "destructive",
+            title: "Update Failed",
+            description: "Could not update the billboard's status.",
+        });
+    }
   }
   
-  const handleDeleteConfirmed = (event: React.MouseEvent) => {
+  const handleDeleteConfirmed = async (event: React.MouseEvent) => {
     event.preventDefault();
     if (!deletingBillboardId) return;
+
+    setIsDeleting(true);
     const billboardToDelete = billboards.find(b => b.id === deletingBillboardId);
     const billboardRef = doc(firestore, "billboards", deletingBillboardId);
 
-    deleteDocumentNonBlocking(billboardRef);
-    
-    toast({
-        title: "Billboard Deleted",
-        description: `"${billboardToDelete?.name}" has been permanently deleted.`,
-    });
-    setDeletingBillboardId(null);
+    try {
+        await deleteDoc(billboardRef);
+        toast({
+            title: "Billboard Deleted",
+            description: `"${billboardToDelete?.name}" has been permanently deleted.`,
+        });
+        setDeletingBillboardId(null);
+    } catch (error: any) {
+        console.error("Failed to delete billboard:", error);
+        toast({
+            variant: "destructive",
+            title: "Delete Failed",
+            description: "Could not delete the billboard.",
+        });
+    } finally {
+        setIsDeleting(false);
+    }
   };
   
   const deletingBillboard = React.useMemo(() => 
@@ -440,12 +478,13 @@ export function BillboardsTable() {
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <Button variant="ghost" onClick={() => setDeletingBillboardId(null)}>Cancel</Button>
+          <Button variant="ghost" onClick={() => setDeletingBillboardId(null)} disabled={isDeleting}>Cancel</Button>
           <Button
             className={cn(buttonVariants({ variant: "destructive" }))}
             onClick={handleDeleteConfirmed}
+            disabled={isDeleting}
           >
-            Delete
+            {isDeleting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>) : 'Delete'}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -453,3 +492,5 @@ export function BillboardsTable() {
     </>
   )
 }
+
+    
