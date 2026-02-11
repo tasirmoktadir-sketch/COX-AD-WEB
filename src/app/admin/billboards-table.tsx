@@ -4,7 +4,7 @@ import * as React from "react"
 import Image from "next/image"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm, useFieldArray } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { doc, collection } from "firebase/firestore"
 import { PlusCircle, MoreHorizontal, X, UploadCloud, PauseCircle, PlayCircle } from "lucide-react"
 
@@ -97,14 +97,8 @@ export function BillboardsTable() {
         isPaused: false,
     }
   })
-  
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: "images"
-  });
 
   const watchedImages = form.watch('images');
-
   const isBothSides = form.watch("size.isBothSides");
 
   const handleOpenSheet = (billboard: Billboard | null) => {
@@ -135,17 +129,24 @@ export function BillboardsTable() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files) return;
-
-    for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        if (file) {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            append(reader.result as string);
-          };
-          reader.readAsDataURL(file);
-        }
-    }
+  
+    // Create a promise for each file reader
+    const readPromises = Array.from(files).map(file => {
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    });
+  
+    // Once all files are read, update the form state
+    Promise.all(readPromises).then(newImageUrls => {
+      const currentImages = form.getValues('images') || [];
+      form.setValue('images', [...currentImages, ...newImageUrls], { shouldValidate: true, shouldDirty: true });
+    });
+  
+    // Clear the file input for the next upload
     event.target.value = '';
   };
   
@@ -327,11 +328,15 @@ export function BillboardsTable() {
                         <FormLabel>Images</FormLabel>
                         <FormControl>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                                {fields.map((field, index) => (
-                                    <div key={field.id} className="relative aspect-video rounded-md overflow-hidden group bg-muted">
-                                        {watchedImages?.[index] && <Image src={watchedImages[index]} alt={`Billboard Image ${index + 1}`} fill className="object-cover"/>}
+                                {watchedImages?.map((imageUrl, index) => (
+                                    <div key={index} className="relative aspect-video rounded-md overflow-hidden group bg-muted">
+                                        {imageUrl && <Image src={imageUrl} alt={`Billboard Image ${index + 1}`} fill className="object-cover"/>}
                                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                            <Button variant="destructive" size="icon" type="button" onClick={() => remove(index)}>
+                                            <Button variant="destructive" size="icon" type="button" onClick={() => {
+                                                const currentImages = form.getValues('images') || [];
+                                                const updatedImages = currentImages.filter((_, i) => i !== index);
+                                                form.setValue('images', updatedImages, { shouldValidate: true, shouldDirty: true });
+                                            }}>
                                                 <X className="h-4 w-4" />
                                                 <span className="sr-only">Remove Image</span>
                                             </Button>
