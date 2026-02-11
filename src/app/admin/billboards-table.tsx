@@ -103,6 +103,8 @@ export function BillboardsTable() {
     name: "images"
   });
 
+  const watchedImages = form.watch('images');
+
   const isBothSides = form.watch("size.isBothSides");
 
   const handleOpenSheet = (billboard: Billboard | null) => {
@@ -327,7 +329,7 @@ export function BillboardsTable() {
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                                 {fields.map((field, index) => (
                                     <div key={field.id} className="relative aspect-video rounded-md overflow-hidden group bg-muted">
-                                        {field.value && <Image src={field.value} alt={`Billboard Image ${index + 1}`} fill className="object-cover"/>}
+                                        {watchedImages?.[index] && <Image src={watchedImages[index]} alt={`Billboard Image ${index + 1}`} fill className="object-cover"/>}
                                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                             <Button variant="destructive" size="icon" type="button" onClick={() => remove(index)}>
                                                 <X className="h-4 w-4" />
