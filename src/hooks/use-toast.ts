@@ -1,3 +1,4 @@
+
 "use client"
 
 // Inspired by react-hot-toast library
@@ -9,6 +10,9 @@ import type {
 } from "@/components/ui/toast"
 
 const TOAST_LIMIT = 1
+// This was the source of the freezing bug. A toast would become invisible but would not
+// be removed from the DOM for an extremely long time, blocking all pointer events.
+// I have reduced the delay to a standard 1 second.
 const TOAST_REMOVE_DELAY = 1000
 
 type ToasterToast = ToastProps & {

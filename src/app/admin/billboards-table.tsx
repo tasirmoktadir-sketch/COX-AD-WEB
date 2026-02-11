@@ -6,7 +6,7 @@ import Image from "next/image"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { doc, collection, setDoc, addDoc, deleteDoc, updateDoc } from "firebase/firestore"
+import { doc, collection } from "firebase/firestore"
 import { PlusCircle, MoreHorizontal, X, UploadCloud, PauseCircle, PlayCircle, Loader2 } from "lucide-react"
 
 import {
@@ -53,12 +53,11 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import type { Billboard } from "@/lib/types"
 import { useBillboards } from "@/context/billboard-context"
-import { useFirestore } from "@/firebase"
+import { useFirestore, setDocumentNonBlocking, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 
@@ -195,73 +194,41 @@ export function BillboardsTable() {
     event.target.value = '';
   };
   
-  async function onSubmit(values: BillboardFormValues) {
-    try {
-        if (editingBillboard) {
-            const billboardRef = doc(firestore, 'billboards', editingBillboard.id);
-            await setDoc(billboardRef, values, { merge: true });
-            toast({ title: "Success", description: "Billboard updated successfully." });
-        } else {
-            const billboardsCollection = collection(firestore, 'billboards');
-            await addDoc(billboardsCollection, values);
-            toast({ title: "Success", description: "Billboard created successfully." });
-        }
-        setIsSheetOpen(false);
-    } catch (error: any) {
-        console.error("Failed to save billboard:", error);
-        let description = "An unknown error occurred while saving.";
-        // Check for Firestore's specific error code for oversized documents
-        if (error.code === 'invalid-argument' || (error.message && error.message.includes('bytes'))) {
-            description = "Save failed because the total data size is too large. Please reduce the number of images or use smaller images.";
-        } else {
-            description = error.message;
-        }
-
-        toast({
-            variant: "destructive",
-            title: "Save Failed",
-            description: description,
-        });
+  function onSubmit(values: BillboardFormValues) {
+    if (editingBillboard) {
+        const billboardRef = doc(firestore, 'billboards', editingBillboard.id);
+        setDocumentNonBlocking(billboardRef, values, { merge: true });
+        toast({ title: "Success", description: "Billboard updated successfully." });
+    } else {
+        const billboardsCollection = collection(firestore, 'billboards');
+        addDocumentNonBlocking(billboardsCollection, values);
+        toast({ title: "Success", description: "Billboard created successfully." });
     }
-}
+    setIsSheetOpen(false);
+  }
 
-  const handleTogglePause = async (billboard: Billboard) => {
+  const handleTogglePause = (billboard: Billboard) => {
     const billboardRef = doc(firestore, 'billboards', billboard.id);
-    try {
-        await updateDoc(billboardRef, { isPaused: !billboard.isPaused });
-        toast({
-            title: `Billboard ${!billboard.isPaused ? 'Paused' : 'Resumed'}`,
-            description: `"${billboard.name}" has been updated.`,
-        });
-    } catch (error: any) {
-        console.error("Failed to toggle pause state:", error);
-        toast({
-            variant: "destructive",
-            title: "Update Failed",
-            description: error.message,
-        });
-    }
+    updateDocumentNonBlocking(billboardRef, { isPaused: !billboard.isPaused });
+    toast({
+        title: `Billboard ${!billboard.isPaused ? 'Paused' : 'Resumed'}`,
+        description: `"${billboard.name}" has been updated.`,
+    });
   }
   
-  const handleDeleteConfirmed = async (event: React.MouseEvent) => {
+  const handleDeleteConfirmed = (event: React.MouseEvent) => {
     event.preventDefault();
     if (!deletingBillboardId) return;
     const billboardToDelete = billboards.find(b => b.id === deletingBillboardId);
-    try {
-        await deleteDoc(doc(firestore, "billboards", deletingBillboardId));
-        toast({
-            title: "Billboard Deleted",
-            description: `"${billboardToDelete?.name}" has been permanently deleted.`,
-        });
-        setDeletingBillboardId(null);
-    } catch (error: any) {
-        console.error("Failed to delete billboard:", error);
-        toast({
-            variant: "destructive",
-            title: "Deletion Failed",
-            description: error.message,
-        });
-    }
+    const billboardRef = doc(firestore, "billboards", deletingBillboardId);
+
+    deleteDocumentNonBlocking(billboardRef);
+    
+    toast({
+        title: "Billboard Deleted",
+        description: `"${billboardToDelete?.name}" has been permanently deleted.`,
+    });
+    setDeletingBillboardId(null);
   };
   
   const deletingBillboard = React.useMemo(() => 
@@ -372,7 +339,7 @@ export function BillboardsTable() {
                     <FormField control={form.control} name="location" render={({ field }) => ( <FormItem> <FormLabel>Location</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
                     <FormField control={form.control} name="facing" render={({ field }) => ( <FormItem> <FormLabel>Facing</FormLabel> <FormControl><Input placeholder="e.g., Northbound Traffic" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
                     <div className="space-y-2">
-                        <Label>Size</Label>
+                        <FormLabel>Size</FormLabel>
                         <div className="grid grid-cols-3 gap-4">
                             <FormField control={form.control} name="size.width" render={({ field }) => ( <FormItem> <FormLabel className="text-xs text-muted-foreground">Width</FormLabel> <FormControl><Input placeholder="e.g., 48'" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
                             <FormField control={form.control} name="size.height" render={({ field }) => ( <FormItem> <FormLabel className="text-xs text-muted-foreground">Height</FormLabel> <FormControl><Input placeholder="e.g., 14'" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
