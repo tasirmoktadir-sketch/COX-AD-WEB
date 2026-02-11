@@ -1,6 +1,7 @@
 
 "use client";
 
+import * as React from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,9 +15,10 @@ import { useBillboards } from '@/context/billboard-context';
 import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { BillboardDetailDialog } from '@/components/billboards/billboard-detail-dialog';
 
 
-function BillboardCard({ billboard }: { billboard: Billboard }) {
+function BillboardCard({ billboard, onViewDetails }: { billboard: Billboard, onViewDetails: () => void }) {
   const imageUrl = billboard.images && billboard.images[0];
   const placeholderImage = placeholderImages.placeholderImages.find(img => img.imageUrl === imageUrl);
   const imageDescription = placeholderImage?.description || billboard.name;
@@ -64,8 +66,8 @@ function BillboardCard({ billboard }: { billboard: Billboard }) {
         </p>
       </CardContent>
       <CardFooter>
-        <Button asChild variant="outline" className="w-full bg-transparent border-accent text-accent hover:bg-accent hover:text-accent-foreground">
-          <Link href="/contact">Inquire Now</Link>
+        <Button onClick={onViewDetails} variant="outline" className="w-full bg-transparent border-accent text-accent hover:bg-accent hover:text-accent-foreground">
+          View Details
         </Button>
       </CardFooter>
     </Card>
@@ -103,6 +105,7 @@ export default function Home() {
       return doc(firestore, 'site_content', 'about_us');
   }, [firestore]);
   const { data: aboutInfo, isLoading: isAboutLoading } = useDoc<AboutInfo>(aboutInfoRef);
+  const [selectedBillboard, setSelectedBillboard] = React.useState<Billboard | null>(null);
 
   return (
     <>
@@ -144,7 +147,7 @@ export default function Home() {
                 </>
               ) : (
                 activeBillboards.map((billboard) => (
-                  <BillboardCard key={billboard.id} billboard={billboard} />
+                  <BillboardCard key={billboard.id} billboard={billboard} onViewDetails={() => setSelectedBillboard(billboard)} />
                 ))
               )}
             </div>
@@ -207,6 +210,11 @@ export default function Home() {
 
       </main>
       <Footer />
+      <BillboardDetailDialog
+        billboard={selectedBillboard}
+        isOpen={!!selectedBillboard}
+        onClose={() => setSelectedBillboard(null)}
+      />
     </>
   );
 }
