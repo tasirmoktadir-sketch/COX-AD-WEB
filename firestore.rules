@@ -88,5 +88,14 @@ service cloud.firestore {
                     && request.resource.data.submittedAt == request.time;
       allow list, get, update, delete: if isAdmin();
     }
+
+    /**
+     * /site_content/{contentId}
+     * Publicly readable for display on the website, but only admins can update it.
+     */
+    match /site_content/{contentId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }

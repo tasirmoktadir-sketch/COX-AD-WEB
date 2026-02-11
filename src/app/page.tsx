@@ -4,12 +4,16 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Map, Maximize, Package, Compass, Mail, Phone, Building } from 'lucide-react';
-import type { Billboard } from '@/lib/types';
+import type { Billboard, AboutInfo } from '@/lib/types';
 import Link from 'next/link';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import placeholderImages from '@/lib/placeholder-images.json';
 import { useBillboards } from '@/context/billboard-context';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
+
 
 function BillboardCard({ billboard }: { billboard: Billboard }) {
   const imageUrl = billboard.images && billboard.images[0];
@@ -70,6 +74,13 @@ function BillboardCard({ billboard }: { billboard: Billboard }) {
 export default function Home() {
   const { billboards } = useBillboards();
   const activeBillboards = billboards.filter(b => !b.isPaused);
+  
+  const firestore = useFirestore();
+  const aboutInfoRef = useMemoFirebase(() => {
+      if (!firestore) return null;
+      return doc(firestore, 'site_content', 'about_us');
+  }, [firestore]);
+  const { data: aboutInfo, isLoading: isAboutLoading } = useDoc<AboutInfo>(aboutInfoRef);
 
   return (
     <>
@@ -118,28 +129,47 @@ export default function Home() {
             </h2>
             <Card className="max-w-2xl mx-auto shadow-lg">
                 <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-4">
-                        <h3 className="font-headline text-2xl font-bold text-primary">Jahedul Anowar</h3>
-                        <p className="flex items-start text-muted-foreground">
-                            <Building className="mr-3 h-5 w-5 text-primary flex-shrink-0 mt-1" />
-                            <span>
-                                <strong>Cox's Ad</strong><br />
-                                Siraj Nazir Road (In front of SP office)<br />
-                                Baharchara,Coxsbazar-4700
-                            </span>
-                        </p>
-                    </div>
-                    <div className="space-y-4">
-                        <h3 className="font-headline text-2xl font-bold text-primary invisible md:visible">Contact</h3>
-                         <p className="flex items-center text-muted-foreground">
-                            <Phone className="mr-3 h-5 w-5 text-primary flex-shrink-0" />
-                            <span>01711-280768, 01862 777899</span>
-                        </p>
-                        <p className="flex items-center text-muted-foreground">
-                            <Mail className="mr-3 h-5 w-5 text-primary flex-shrink-0" />
-                            <a href="mailto:coxadd05@yahoo.com" className="hover:text-primary transition-colors">coxadd05@yahoo.com</a>
-                        </p>
-                    </div>
+                  {isAboutLoading ? (
+                      <>
+                          <div className="space-y-4">
+                              <Skeleton className="h-8 w-3/4" />
+                              <Skeleton className="h-20 w-full" />
+                          </div>
+                          <div className="space-y-4">
+                              <h3 className="font-headline text-2xl font-bold text-primary invisible md:visible">Contact</h3>
+                              <Skeleton className="h-6 w-full" />
+                              <Skeleton className="h-6 w-full" />
+                          </div>
+                      </>
+                  ) : aboutInfo ? (
+                      <>
+                          <div className="space-y-4">
+                              <h3 className="font-headline text-2xl font-bold text-primary">{aboutInfo.name}</h3>
+                              <p className="flex items-start text-muted-foreground">
+                                  <Building className="mr-3 h-5 w-5 text-primary flex-shrink-0 mt-1" />
+                                  <span className="whitespace-pre-line">
+                                      <strong>{aboutInfo.companyName}</strong><br />
+                                      {aboutInfo.address}
+                                  </span>
+                              </p>
+                          </div>
+                          <div className="space-y-4">
+                              <h3 className="font-headline text-2xl font-bold text-primary invisible md:visible">Contact</h3>
+                               <p className="flex items-center text-muted-foreground">
+                                  <Phone className="mr-3 h-5 w-5 text-primary flex-shrink-0" />
+                                  <span>{aboutInfo.phone}</span>
+                              </p>
+                              <p className="flex items-center text-muted-foreground">
+                                  <Mail className="mr-3 h-5 w-5 text-primary flex-shrink-0" />
+                                  <a href={`mailto:${aboutInfo.email}`} className="hover:text-primary transition-colors">{aboutInfo.email}</a>
+                              </p>
+                          </div>
+                      </>
+                  ) : (
+                      <div className="col-span-full text-center text-muted-foreground py-8">
+                          <p>Company information will be available soon.</p>
+                      </div>
+                  )}
                 </CardContent>
             </Card>
           </div>

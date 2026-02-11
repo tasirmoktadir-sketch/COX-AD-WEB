@@ -142,6 +142,42 @@
         "message",
         "submittedAt"
       ]
+    },
+    "AboutInfo": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "About Information",
+      "type": "object",
+      "description": "Stores the content for the 'About Us' section of the website.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the primary contact person."
+        },
+        "companyName": {
+          "type": "string",
+          "description": "The name of the company."
+        },
+        "address": {
+          "type": "string",
+          "description": "The physical address of the company."
+        },
+        "phone": {
+          "type": "string",
+          "description": "The contact phone number(s)."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The contact email address."
+        }
+      },
+      "required": [
+        "name",
+        "companyName",
+        "address",
+        "phone",
+        "email"
+      ]
     }
   },
   "auth": {
@@ -215,8 +251,24 @@
             }
           ]
         }
+      },
+      {
+        "path": "/site_content/{contentId}",
+        "definition": {
+          "entityName": "AboutInfo",
+          "schema": {
+            "$ref": "#/backend/entities/AboutInfo"
+          },
+          "description": "Stores general site content like the 'About Us' information. Use a singleton document with a known ID (e.g., 'about_us').",
+          "params": [
+            {
+              "name": "contentId",
+              "description": "The unique identifier for the content document (e.g., 'about_us')."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "The Firestore structure is designed to securely manage billboard data and admin users while ensuring authorization independence and supporting list operations. Admins are managed via a dedicated collection `roles_admin` for simplified role-based access control. Billboard data is stored in a flat collection `/billboards` for easy querying and display on the website. Since the app requires an admin user, a collection `/admin_users` is needed to manage them. To store contact form submissions, a new `/inquiries` collection is added. It is publicly writable but only readable by admins.\n\nAuthorization Independence: The structure achieves authorization independence by using the `/roles_admin/{uid}` collection for admin role management. This allows us to check for admin status based on document existence instead of relying on `get()` calls to other collections, ensuring atomic operations.\n\nQAPs Support: Secure list operations are supported by segregating admin role data into a separate collection (`/roles_admin`). Security rules can efficiently check for the existence of a document in this collection to grant or deny access to sensitive data and functionalities. The billboards are placed in a flat collection with no subcollections. This collection enables simple querying and displaying."
+    "reasoning": "The Firestore structure is designed to securely manage billboard data and admin users while ensuring authorization independence and supporting list operations. Admins are managed via a dedicated collection `roles_admin` for simplified role-based access control. Billboard data is stored in a flat collection `/billboards` for easy querying and display on the website. Since the app requires an admin user, a collection `/admin_users` is needed to manage them. To store contact form submissions, a new `/inquiries` collection is added. It is publicly writable but only readable by admins. To store editable site content like 'About Us' information, a new `/site_content` collection is introduced. It's publicly readable but only writable by admins, and will hold singleton documents for specific content areas."
   }
 }

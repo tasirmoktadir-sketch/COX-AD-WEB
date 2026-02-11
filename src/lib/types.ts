@@ -14,3 +14,11 @@ export type Billboard = {
   isPaused?: boolean;
   facing?: string;
 };
+
+export type AboutInfo = {
+  name: string;
+  companyName: string;
+  address: string;
+  phone: string;
+  email: string;
+};
