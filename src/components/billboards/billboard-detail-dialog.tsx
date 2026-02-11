@@ -126,13 +126,13 @@ export function BillboardDetailDialog({ billboard, isOpen, onClose }: BillboardD
 
                     <div className="space-y-1">
                          <p className="font-semibold text-foreground">Availability</p>
-                         <p className="flex items-center">
+                         <div className="flex items-center">
                             <Package className="mr-3 h-4 w-4 text-primary flex-shrink-0" />
                             {billboard.availability > 0 
                             ? <Badge variant="secondary" className="border-green-500/50 bg-green-500/10 text-green-700 dark:text-green-400">{`${billboard.availability} ${billboard.availability > 1 ? 'units available' : 'unit available'}`}</Badge> 
                             : <Badge variant="destructive">Unavailable</Badge>
                             }
-                        </p>
+                        </div>
                     </div>
 
                 </div>
